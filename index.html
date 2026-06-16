@@ -143,6 +143,23 @@ input,textarea{-webkit-user-select:text;user-select:text}
   transition:all .15s;
 }
 #help-btn:hover{border-color:var(--accent);box-shadow:0 0 18px rgba(95,245,212,.3)}
+#cast-btn{
+  position:fixed;bottom:18px;left:68px;z-index:50;width:42px;height:42px;
+  font:inherit;font-size:15px;color:var(--accent);cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+  transition:all .15s;
+}
+#cast-btn:hover{border-color:var(--accent);box-shadow:0 0 18px rgba(95,245,212,.3)}
+.modal-wide{max-width:680px;width:100%}
+.cast-card{border:1px solid var(--line);border-left:2px solid var(--accent);padding:11px 14px;margin-bottom:10px;background:rgba(95,245,212,.03)}
+.cast-card .cc-name{font-size:13px;color:#dff6f0;font-weight:600;letter-spacing:.04em}
+.cast-card .cc-meta{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:2px 0 6px}
+.cast-card .cc-loc{color:var(--accent);cursor:pointer;border-bottom:1px dashed rgba(95,245,212,.5)}
+.cast-card .cc-loc:hover{text-shadow:0 0 10px rgba(95,245,212,.6)}
+.cast-card .cc-bio{font-size:11.5px;line-height:1.55;color:var(--ink)}
+.cast-group{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:16px 0 8px;opacity:.75}
+.cast-group:first-child{margin-top:0}
 
 /* ===== modal ===== */
 .modal-overlay{
@@ -277,6 +294,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   #sidebar::before{left:0;top:-1px;width:100%;height:2px;
     background:linear-gradient(90deg,transparent,var(--accent) 30%,var(--accent) 70%,transparent)}
   #help-btn{bottom:auto;top:18px;right:18px;left:auto}
+  #cast-btn{bottom:auto;top:18px;right:68px;left:auto}
   .star-label{font-size:9px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -319,6 +337,20 @@ input,textarea{-webkit-user-select:text;user-select:text}
 </div>
 
 <button id="help-btn" title="Controls &amp; navigation">?</button>
+<button id="cast-btn" title="Characters &amp; background">☷</button>
+
+<div id="cast-modal" class="modal-overlay">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <h2>Dramatis Personae</h2>
+      <button id="close-cast" class="x-btn">Close [×]</button>
+    </div>
+    <div class="modal-body">
+      <p class="welcome">The people of Revelation Space &amp; Chasm City. Click a character's location to fly there.</p>
+      <div id="cast-list"></div>
+    </div>
+  </div>
+</div>
 
 <div id="help-modal" class="modal-overlay">
   <div class="modal">
@@ -489,6 +521,38 @@ const EVENTS = [
     text:"Tanner Mirabel, security chief to arms dealer Cahuella, fails to save Cahuella's wife Gitta during Reivich's ambush. Tanner vows revenge — but Cahuella trawls his mind and takes his identity." },
   { year:2517, system:"Epsilon Eridani", title:"[Chasm City] Tanner arrives in Chasm City",
     text:"Seven years after the Melding Plague, 'Tanner' reaches the plague-rotted Chasm City — a slum split into Canopy and Mulch — hunting Reivich, dreaming Sky's life through an indoctrinal virus." },
+];
+
+// Principal characters of Revelation Space & Chasm City, with a home/location anchor.
+const CHARACTERS = [
+  { group:"Revelation Space", name:"Dan Sylveste", role:"Xenoarchaeologist · colony leader", loc:"Delta Pavonis",
+    bio:"Ruthless, brilliant scion of the Sylveste Institute; secretly a genetically engineered child. Obsessed with the Amarantin and 'The Event'. The only human to fly into a Shroud and return. His obsession dooms him \u2014 manipulated by Sun Stealer into breaching Cerberus, he dies scanned into the Hades Matrix." },
+  { group:"Revelation Space", name:"Ilia Volyova", role:"Triumvir · keeper of the Cache Weapons", loc:"Delta Pavonis",
+    bio:"Implant-free Ultra of the Nostalgia for Infinity, possibly born in the 21st century \u2014 among the oldest humans alive. Munitions genius and the Captain's only true friend. Her hunt for a gunnery officer to control the cache weapons sets the whole plot in motion." },
+  { group:"Revelation Space", name:"Ana Khouri", role:"Soldier-turned-assassin", loc:"Epsilon Eridani",
+    bio:"Ex-soldier from Sky's Edge, accidentally shipped to Chasm City and separated from her husband. A Shadowplay assassin, blackmailed by the Mademoiselle into infiltrating the Infinity to kill Sylveste. Crushed by Hades' gravity, she survives only as a copy in the Matrix." },
+  { group:"Revelation Space", name:"Captain Brannigan", role:"Plague-bound captain of the Infinity", loc:"Epsilon Eridani",
+    bio:"John Brannigan, infected by the Melding Plague and slowly fusing with his ship. Volyova keeps him in deep reefersleep to arrest the disease. Once murdered his first officer Sajaki \u2014 then later overwrote Sajaki's mind with his own. In the end, released to take over the ship and destroy Sun Stealer." },
+  { group:"Revelation Space", name:"Sajaki", role:"Triumvir", loc:"Epsilon Eridani",
+    bio:"Yuuji Sajaki, the driving will among the triumvirate, devoted to curing the Captain. His trawl of Khouri's mind accidentally frees Sun Stealer into the ship \u2014 which then kills him." },
+  { group:"Revelation Space", name:"Hegazi", role:"Triumvir", loc:"Epsilon Eridani",
+    bio:"The third triumvir, heavily chimeric (more machine than man). Loyal to Sajaki; killed by Sun Stealer as it tears through the crew." },
+  { group:"Revelation Space", name:"Calvin Sylveste", role:"Beta-level simulation · Dan's father", loc:"Epsilon Eridani",
+    bio:"Architect of the disastrous 'Eighty' experiment. Dead, but preserved as a beta-level simulation Dan consults \u2014 the only mind with the expertise to treat the plague-stricken Captain." },
+  { group:"Revelation Space", name:"Pascale Girardieau", role:"Journalist · Dan's wife", loc:"Delta Pavonis",
+    bio:"Daughter of Sylveste's political rival Nils Girardieau; began as her father's spy under the alias Pascale Dubois, then genuinely married Dan among the Amarantin ruins." },
+  { group:"Revelation Space", name:"The Mademoiselle", role:"Hidden antagonist", loc:"Epsilon Eridani",
+    bio:"A reclusive Chasm City power, revealed to be Sylveste's lost Shroud-expedition partner \u2014 maimed and embittered, fighting a digital war against Sun Stealer and using Khouri as her weapon." },
+  { group:"Revelation Space", name:"Sun Stealer", role:"Ancient AI envoy", loc:"Hades",
+    bio:"A digital agent of the Shrouders, lurking for decades in the Infinity's gunnery systems. Its purpose: lure a species into tripping the Inhibitor beacon in Cerberus \u2014 a test of whether it's still too dangerous to leave their fortresses." },
+  { group:"Chasm City", name:"Tanner Mirabel", role:"Security specialist · narrator", loc:"61 Cygni",
+    bio:"Ex-sniper from Sky's Edge, security chief to the arms dealer Cahuella. After failing to save Cahuella's wife Gitta, he pursues Argent Reivich to Chasm City \u2014 haunted by virus-induced dreams of Sky Haussmann. His identity is not what it seems." },
+  { group:"Chasm City", name:"Sky Haussmann", role:"Flotilla captain · cult figure", loc:"61 Cygni",
+    bio:"Born aboard the Santiago, secretly an immortal 'sleeper'. Jettisoned living colonists to win the Flotilla's race, naming the world 'Sky's Edge' for his crime. Faked his execution and vanished into the jungle \u2014 to live on as Cahuella." },
+  { group:"Chasm City", name:"Cahuella", role:"Arms dealer", loc:"61 Cygni",
+    bio:"A sadistic weapons dealer running the Reptile House on Sky's Edge \u2014 in truth Sky Haussmann under a new identity, and later 'Tanner' too. The novel's nested identities collapse into one man." },
+  { group:"Chasm City", name:"Argent Reivich", role:"Postmortal noble · quarry", loc:"Epsilon Eridani",
+    bio:"A young aristocrat who kills Cahuella's wife Gitta in revenge for his own family, then flees to Chasm City. Tanner's target \u2014 cleverer and more sympathetic than the hunt first suggests." },
 ];
 </script>
 <script>
@@ -2422,6 +2486,31 @@ document.getElementById('help-btn').addEventListener('click',()=>helpModal.class
 document.getElementById('close-help').addEventListener('click',()=>helpModal.classList.remove('active'));
 helpModal.addEventListener('click',e=>{ if(e.target===helpModal) helpModal.classList.remove('active'); });
 window.addEventListener('load',()=>helpModal.classList.add('active'));
+
+/* ===== characters modal ===== */
+const castModal=document.getElementById('cast-modal');
+const castList=document.getElementById('cast-list');
+function renderCast(){
+  if(!castList || typeof CHARACTERS==='undefined') return;
+  let html='', lastGroup=null;
+  CHARACTERS.forEach(c=>{
+    if(c.group!==lastGroup){ html+='<div class="cast-group">'+esc(c.group)+'</div>'; lastGroup=c.group; }
+    html+='<div class="cast-card">'+
+      '<div class="cc-name">'+esc(c.name)+'</div>'+
+      '<div class="cc-meta">'+esc(c.role)+' · <span class="cc-loc" data-sys="'+esc(c.loc)+'" title="Fly to '+esc(c.loc)+'">'+esc(c.loc)+' \u2192</span></div>'+
+      '<div class="cc-bio">'+esc(c.bio)+'</div>'+
+    '</div>';
+  });
+  castList.innerHTML=html;
+}
+renderCast();
+document.getElementById('cast-btn').addEventListener('click',()=>castModal.classList.add('active'));
+document.getElementById('close-cast').addEventListener('click',()=>castModal.classList.remove('active'));
+castModal.addEventListener('click',e=>{ if(e.target===castModal) castModal.classList.remove('active'); });
+castList.addEventListener('click',e=>{
+  const loc=e.target.closest('.cc-loc');
+  if(loc && loc.dataset.sys){ castModal.classList.remove('active'); flyToSystem(loc.dataset.sys); }
+});
 
 /* ============================================================
    Resize + animation loop
