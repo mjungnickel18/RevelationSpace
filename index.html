@@ -312,7 +312,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="hud-top">
   <div id="brand" class="panel">
     <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
-    <p>Revelation Space · Books 1–2 · 2083–2567</p>
+    <p>Revelation Space · Books 1–3 · 2083–2634</p>
   </div>
   <div id="search-wrap">
     <span id="search-glyph">⌖</span>
@@ -330,7 +330,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <button id="step-back" class="deck-btn step" title="Previous year">◀</button>
   <div id="slider-wrap">
     <div id="ticks"></div>
-    <input type="range" id="timeline-slider" min="2080" max="2580" value="2567" />
+    <input type="range" id="timeline-slider" min="2080" max="2700" value="2567" />
   </div>
   <button id="step-fwd" class="deck-btn step" title="Next year">▶</button>
   <button id="ev-fwd" class="deck-btn step" title="Next event">⏭</button>
@@ -523,6 +523,21 @@ const EVENTS = [
     text:"Tanner Mirabel, security chief to arms dealer Cahuella, fails to save Cahuella's wife Gitta during Reivich's ambush. Tanner vows revenge — but Cahuella trawls his mind and takes his identity." },
   { year:2517, system:"Epsilon Eridani", title:"[Chasm City] Tanner arrives in Chasm City",
     text:"Seven years after the Melding Plague, 'Tanner' reaches the plague-rotted Chasm City — a slum split into Canopy and Mulch — hunting Reivich, dreaming Sky's life through an indoctrinal virus." },
+  // --- Redemption Ark (book 3; the true sequel — Inhibitors awaken) ---
+  { year:2605, system:"Epsilon Eridani", title:"[Redemption Ark] Galiana returns, Inhibitor-touched",
+    text:"At the Conjoiner Mother Nest, Skade investigates a returned deep-space ship and finds Galiana — founder of the Conjoiners — her mind seized by an Inhibitor agent. Galiana begs for death; Skade freezes her instead." },
+  { year:2615, system:"Epsilon Eridani", title:"[Redemption Ark] Clavain defects",
+    text:"Nevil Clavain — 'Butcher of Tharsis', centuries old — learns the Night Council's fleet is meant to evacuate only the Conjoiners and abandon humanity. He defects to the Demarchists at Yellowstone; Skade, mutilated in his escape, is rebuilt for revenge." },
+  { year:2615, system:"Epsilon Eridani", title:"[Redemption Ark] H, Scorpio & the Zodiacal Light",
+    text:"The hidden figure H captures and then allies with Clavain, supplying ships and inertia-suppression tech; Scorpio brings an army of hyperpigs. They name their ship the Zodiacal Light and race for the cache weapons." },
+  { year:2633, system:"Delta Pavonis", title:"[Redemption Ark] The Inhibitors begin at Resurgam",
+    text:"In the Delta Pavonis system the Inhibitors dismantle moons and feed the gas giant Roc into a vast machine — building the weapon that will pierce Delta Pavonis itself to scour Resurgam's 200,000 colonists." },
+  { year:2633, system:"Delta Pavonis", title:"[Redemption Ark] Volyova, Khouri & Thorn evacuate",
+    text:"Hiding under aliases on Resurgam, Volyova and Khouri join the resistance leader Thorn to evacuate the doomed planet, signalling the Captain-controlled Nostalgia for Infinity in orbit." },
+  { year:2633, system:"Delta Pavonis", title:"[Redemption Ark] Cache weapons unleashed",
+    text:"As the Inhibitors near the star, Volyova deploys the hell-class cache weapons to buy time; only a few thousand colonists have been lifted. Clavain's forces and the Infinity race to complete the evacuation." },
+  { year:2634, system:"Delta Pavonis", title:"[Redemption Ark] Resurgam doomed; flight to Ararat",
+    text:"The Inhibitors pierce Delta Pavonis and begin scouring Resurgam. The survivors flee aboard the Nostalgia for Infinity toward a hidden ocean world the refugees will call Ararat." },
 ];
 
 // Principal characters of Revelation Space & Chasm City, with a home/location anchor.
@@ -555,6 +570,22 @@ const CHARACTERS = [
     bio:"A sadistic weapons dealer running the Reptile House on Sky's Edge \u2014 in truth Sky Haussmann under a new identity, and later 'Tanner' too. The novel's nested identities collapse into one man." },
   { group:"Chasm City", name:"Argent Reivich", role:"Postmortal noble · quarry", loc:"Epsilon Eridani",
     bio:"A young aristocrat who kills Cahuella's wife Gitta in revenge for his own family, then flees to Chasm City. Tanner's target \u2014 cleverer and more sympathetic than the hunt first suggests." },
+  { group:"Redemption Ark", name:"Nevil Clavain", role:"Conjoiner defector · soldier", loc:"Epsilon Eridani",
+    bio:"One of the oldest Conjoiners, centuries old, once the 'Butcher of Tharsis' who fought them on Mars. Haunted by the fate of Galiana and the child Felka. When he learns the Night Council means to abandon humanity, he defects and races to seize the cache weapons first." },
+  { group:"Redemption Ark", name:"Skade", role:"Night Council Conjoiner · antagonist", loc:"Epsilon Eridani",
+    bio:"A militarised Conjoiner serving the secret Night Council, possibly subverted by an alien intellect (the Mademoiselle's echo) during a Chasm City raid. Mutilated in Clavain's escape and rebuilt as head-on-armour, she hunts him for revenge across relativistic chases." },
+  { group:"Redemption Ark", name:"Galiana", role:"Founder of the Conjoiners", loc:"Epsilon Eridani",
+    bio:"The mother of the Conjoiner movement, lost on a deep-space mission. She returns with her mind seized by an Inhibitor agent — the first clear sign that the Wolves are awake. She begs for death; Skade freezes her instead." },
+  { group:"Redemption Ark", name:"Felka", role:"Gifted Conjoiner", loc:"Epsilon Eridani",
+    bio:"An autistic, brilliant Conjoiner whom Clavain believes may be his and Galiana's daughter. She can make eerie mental contact with the Inhibitors' patterns." },
+  { group:"Redemption Ark", name:"H (Hourglass)", role:"Hidden Chasm City power", loc:"Epsilon Eridani",
+    bio:"A mysterious underground figure who captures, then backs Clavain — supplying ships and his own inertia-suppression technology to beat Skade to the cache weapons." },
+  { group:"Redemption Ark", name:"Scorpio", role:"Hyperpig leader", loc:"Epsilon Eridani",
+    bio:"A pig-human hybrid with a hard past and harder edge, who raises an army of hyperpigs for the pursuit and crews the Zodiacal Light. A central figure in the books to come." },
+  { group:"Redemption Ark", name:"Antoinette Bax", role:"Demarchist freighter pilot", loc:"Epsilon Eridani",
+    bio:"A young Yellowstone pilot first met burying her father in the gas giant Tangerine Dream. She allies with Clavain aboard her ship Storm Bird during the escape from the Conjoiners." },
+  { group:"Redemption Ark", name:"Thorn", role:"Resurgam resistance leader", loc:"Delta Pavonis",
+    bio:"Real name Renzo; a charismatic insurgent on oppressed Resurgam who has long tried to evacuate the planet. He joins Volyova and Khouri to lift the colonists before the Inhibitors scour the world." },
 ];
 </script>
 <script>
@@ -2197,6 +2228,7 @@ function openPlanet(d){
     :d.special==='colony'?colonyStatus(yr)
     :d.isEarth?earthStatus(yr)
     :d.special==='yellowstone'?(yr>=2510?'Rust Belt — habitats ruined by the Melding Plague':'Glitter Band — 10,000 habitats, the Belle Epoque')
+    :d.special==='resurgam'?(yr>=2634?'Scoured by the Inhibitors — the colony evacuates to Ararat':yr>=2633?'Under Inhibitor assault — mass evacuation underway':'Amarantin dig site — colony of ~200,000')
     :d.special==='oldpav'?oldPavStatus(yr):null;
   const statusRow=status
     ?`<div class="stat wide"><b>${esc(status)}</b><span>status · year ${yr}</span></div>`
@@ -2438,7 +2470,7 @@ slider.addEventListener('input',e=>{
 });
 function stepYear(delta){
   if(playing){ playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
-  const min=parseInt(slider.min)||2080, max=parseInt(slider.max)||2580;
+  const min=parseInt(slider.min)||2080, max=parseInt(slider.max)||2700;
   const y=Math.min(max,Math.max(min,parseInt(slider.value)+delta));
   slider.value=y; setYearLabel(y); updateTimeline(y);
 }
@@ -2477,7 +2509,7 @@ playBtn.addEventListener('click',()=>{
   playing=!playing;
   playBtn.textContent=playing?'❚❚':'▶';
   playBtn.classList.toggle('on',playing);
-  if(playing && parseInt(slider.value)>=2580){ slider.value=2080; }
+  if(playing && parseInt(slider.value)>=2700){ slider.value=2080; }
 });
 
 /* ============================================================
@@ -2546,7 +2578,7 @@ function animate(){
     if(playAccum>=1){
       const step=Math.floor(playAccum); playAccum-=step;
       let y=parseInt(slider.value)+step;
-      if(y>=2580){ y=2580; playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
+      if(y>=2700){ y=2700; playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
       slider.value=y; setYearLabel(y); updateTimeline(y);
     }
   }
@@ -2804,7 +2836,7 @@ function drawVRPanel(title, body){
   // timeline bar
   const tlY=H-120, tlX=34, tlW=W-68;
   x.fillStyle='rgba(95,245,212,0.18)'; x.fillRect(tlX,tlY,tlW,12);
-  const yr=parseInt(slider.value), frac=(yr-2080)/(2580-2080);
+  const yr=parseInt(slider.value), frac=(yr-2080)/(2700-2080);
   x.fillStyle='#5ff5d4'; x.fillRect(tlX,tlY,tlW*frac,12);
   x.beginPath(); x.arc(tlX+tlW*frac,tlY+6,14,0,7); x.fill();
   x.fillStyle='#bfe9e2'; x.font='600 30px monospace';
@@ -2875,7 +2907,7 @@ function vrPanelClick(u,v){
   if(vrTimelineRect && u>=vrTimelineRect.x && u<=vrTimelineRect.x+vrTimelineRect.w &&
      v>=vrTimelineRect.y-0.03 && v<=vrTimelineRect.y+vrTimelineRect.h){
     const frac=(u-vrTimelineRect.x)/vrTimelineRect.w;
-    const yr=Math.round(2080+frac*(2580-2080));
+    const yr=Math.round(2080+frac*(2700-2080));
     slider.value=yr; setYearLabel(yr); updateTimeline(yr); redrawVRPanel();
   }
 }
@@ -2886,7 +2918,7 @@ function vrPanelDrag(u,v){
   if(u>=vrTimelineRect.x-0.02 && u<=vrTimelineRect.x+vrTimelineRect.w+0.02 &&
      v>=vrTimelineRect.y-0.06 && v<=vrTimelineRect.y+vrTimelineRect.h+0.04){
     const frac=THREE.MathUtils.clamp((u-vrTimelineRect.x)/vrTimelineRect.w,0,1);
-    const yr=Math.round(2080+frac*(2580-2080));
+    const yr=Math.round(2080+frac*(2700-2080));
     if(yr!==parseInt(slider.value)){ slider.value=yr; setYearLabel(yr); updateTimeline(yr); }
     redrawVRPanel();
   }
