@@ -372,6 +372,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
         <div class="legend-row"><span class="swatch dot acid"></span>Neutron star (Hades)</div>
         <div class="legend-row"><span class="swatch dot crimson"></span>Lighthugger strike route</div>
         <div class="legend-row"><span class="swatch ring"></span>Amarantin artefact (Cerberus)</div>
+        <div class="legend-row"><span class="swatch dot" style="background:#b08aff"></span>Shroud — warped spacetime (approx. position)</div>
       </div>
     </div>
   </div>
@@ -415,6 +416,9 @@ const SYSTEMS = [
   { id:"ararat", name:"Ararat (107 Piscium)", dist:24.3, x:9.6,y:8.8,z:13.2, color:"#ffe0a0", size_class:"medium",
     lore:"An unremarkable star with a single ocean world — a Pattern Juggler planet. The refugees from Resurgam aboard the Nostalgia for Infinity hide here at the close of Redemption Ark. Clavain's final resting place; the Jugglers preserve him with Galiana and Felka.",
     people:["Nevil Clavain","Scorpio","Ana Khouri"], orbitScale:1.0 },
+  { id:"lascaille_shroud", name:"Lascaille's Shroud", dist:14.0, x:-4.8,y:-9.2,z:11.6, color:"#b08aff", size_class:"shroud", posApprox:true,
+    lore:"Not a star but a region of restructured spacetime in the trans-Tau Ceti sector — one of the Shrouds. Inside hide the Shrouders (a faction of surviving Amarantin, the 'Banished'), their minds possibly encoded into spacetime itself. The exact position is never given in the books; this marker shows the sector, not precise coordinates.",
+    people:["Philip Lascaille","Dan Sylveste","Carine Lefevre"], orbitScale:1.0 },
 ];
 
 const PLANETS = [
@@ -484,10 +488,14 @@ const ROUTES = [
 const EVENTS = [
   { year:2372, system:"Epsilon Eridani", title:"The Eighty",
     text:"Calvin Sylveste runs the destructive-scan experiment that copies 80 volunteers into software. Most die or corrupt; the disaster haunts the Sylveste name. (Backstory, recalled throughout the novel.)" },
-  { year:2405, system:"Epsilon Eridani", title:"Sylveste's Shroud expedition departs",
-    text:"Dan Sylveste leaves Yellowstone for Lascaille's Shroud, chasing the secret Philip Lascaille brought back. His partner is lost; she will return as the Mademoiselle." },
-  { year:2441, system:"Epsilon Eridani", title:"Return from the Shroud",
-    text:"Sylveste comes back from the Shroud changed and obsessed — the only human to fly into a Shroud and survive. The Shrouders' warning about the Inhibitors festers in him." },
+  { year:2373, system:"Lascaille's Shroud", title:"Lascaille returns from the Shroud",
+    text:"Philip Lascaille becomes the first human to penetrate a Shroud's boundary and return alive — but mute and broken. The Shroud is named after him; his single cryptic message guides Sylveste's later expedition." },
+  { year:2405, system:"Lascaille's Shroud", title:"Sylveste's Shroud expedition departs",
+    text:"Dan Sylveste and Carine Lefevre leave Yellowstone for Lascaille's Shroud, altered with Pattern-Juggler transforms to survive contact with the Shrouders." },
+  { year:2418, system:"Lascaille's Shroud", title:"Sun Stealer implanted in Sylveste",
+    text:"Penetrating the Shroud, Sylveste is covertly imprinted with Sun Stealer — a Shrouder program designed to drive a human to trip the Inhibitor beacon. The station and ships are destroyed; Sylveste and Carine barely survive." },
+  { year:2441, system:"Lascaille's Shroud", title:"Sylveste returns, changed",
+    text:"Sylveste comes home the only person besides Lascaille to survive a Shroud — obsessed, carrying a hidden passenger, and set on the path that will lead him to Resurgam and Cerberus." },
   { year:2491, system:"Epsilon Eridani", title:"Resurgam expedition departs",
     text:"Sylveste's lighthugger Lorean leaves Yellowstone for Delta Pavonis to excavate the Amarantin. The transit takes ~20 years." },
   { year:2510, system:"Epsilon Eridani", title:"The Melding Plague",
@@ -600,6 +608,10 @@ const CHARACTERS = [
     bio:"A young Yellowstone pilot first met burying her father in the gas giant Tangerine Dream. She allies with Clavain aboard her ship Storm Bird during the escape from the Conjoiners." },
   { group:"Redemption Ark", name:"Thorn", role:"Resurgam resistance leader", loc:"Delta Pavonis",
     bio:"Real name Renzo; a charismatic insurgent on oppressed Resurgam who has long tried to evacuate the planet. He joins Volyova and Khouri to lift the colonists before the Inhibitors scour the world." },
+  { group:"Shrouds & Backstory", name:"Philip Lascaille", role:"First Shroud survivor", loc:"Lascaille's Shroud",
+    bio:"The first human to penetrate a Shroud and return alive — left mute and broken, housed at the Sylveste Institute. His single cryptic message guided Sylveste's expedition. His death was later faked; he was taken back to the Shroud and remade." },
+  { group:"Shrouds & Backstory", name:"Carine Lefevre", role:"Sylveste's expedition partner", loc:"Lascaille's Shroud",
+    bio:"Accompanied Sylveste into Lascaille's Shroud, both altered with Pattern-Juggler transforms. Lost in the gravitational-flux catastrophe — and reborn, embittered and maimed, as the Mademoiselle who later hunts Sylveste through Khouri." },
 ];
 </script>
 <script>
@@ -611,7 +623,7 @@ const CHARACTERS = [
 'use strict';
 
 const SCALE = 8;
-const STAR_SIZES = { small:0.225, medium:0.50, large:1.45, supermassive:8.0 };
+const STAR_SIZES = { small:0.225, medium:0.50, large:1.45, supermassive:8.0, shroud:0.9 };
 
 /* ---- discovery years (first maiden-voyage arrival) ---- */
 const discoveryYears = { 'Sol': 0 };
@@ -1117,18 +1129,40 @@ SYSTEMS.forEach(sys=>{
   group.position.copy(sysPos(sys));
 
   const isBlackHole = sys.size_class==='supermassive';
+  const isShroud = sys.size_class==='shroud';
   const coreColor = isBlackHole ? 0x000000 : 0xffffff;
   const core=new THREE.Mesh(new THREE.SphereGeometry(r,20,20),
     new THREE.MeshBasicMaterial({color:coreColor,transparent:true,opacity:1}));
   core.raycast=()=>{};
   if(!isBlackHole) core.material.color.set(sys.color).lerp(new THREE.Color(0xffffff),0.55);
+  if(isShroud){ core.material.color.set(0x1a0d2e); core.material.opacity=0.92; } // dark warped core
   group.add(core);
+
+  let shroudShell=null;
+  if(isShroud){
+    // concentric wireframe spheres = restructured spacetime; a faint purple haze around them
+    shroudShell=new THREE.Group();
+    for(let i=0;i<3;i++){
+      const wire=new THREE.Mesh(
+        new THREE.SphereGeometry(r*(1.25+i*0.5),14,10),
+        new THREE.MeshBasicMaterial({color:0xb08aff,wireframe:true,transparent:true,opacity:0.22-i*0.05}));
+      wire.raycast=()=>{};
+      wire.userData.spin=0.04+i*0.03;
+      shroudShell.add(wire);
+    }
+    group.add(shroudShell);
+    const haze=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:haloTex,color:new THREE.Color(0xb08aff),transparent:true,
+      opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+    haze.scale.setScalar(r*6); haze.raycast=()=>{};
+    group.add(haze);
+  }
 
   let blackHole=null;
   if(isBlackHole){
     blackHole=makeInterstellarBH(r);
     group.add(blackHole.group);
-  } else {
+  } else if(!isShroud){
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({
       map:haloTex,color:new THREE.Color(sys.color),transparent:true,
       opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false}));
@@ -1157,7 +1191,7 @@ SYSTEMS.forEach(sys=>{
 
   starsGroup.add(group);
   starRecords.push({system:sys,group,core,halo,pick,baseHalo:r*7,phase:Math.random()*6.28,
-    baseCore:core.material.color.getHex(),isNova:false,blackHole,dyson});
+    baseCore:core.material.color.getHex(),isNova:false,blackHole,dyson,shroudShell});
 });
 
 /* selection reticle — rotating dashed diamond ring */
@@ -2205,7 +2239,7 @@ function openSystem(sys){
   sbContent.innerHTML=`
     <div class="sys-name"><span class="sys-chip" style="background:${esc(sys.color)};color:${esc(sys.color)}"></span>${esc(sys.name)}</div>
     <div class="stat-grid">
-      <div class="stat"><b>${sys.dist}</b><span>ly from Sol</span></div>
+      <div class="stat"><b>${sys.dist}${sys.posApprox?'*':''}</b><span>ly from Sol${sys.posApprox?' (approx.)':''}</span></div>
       <div class="stat"><b>${esc(sys.size_class)}</b><span>star class</span></div>
       <div class="stat wide"><b>${bobs.length?esc(bobs.join(', ')):'— none logged —'}</b><span>People / crew</span></div>
       ${discovered!==undefined&&discovered>0?`<div class="stat wide"><b>${discovered}</b><span>first arrival (year)</span></div>`:''}
@@ -2605,6 +2639,9 @@ function animate(){
   // star twinkle
   starRecords.forEach(rec=>{
     if(rec.dyson && rec.dyson.group.visible) rec.dyson.group.rotation.y+=dt*0.04;
+    if(rec.shroudShell){
+      rec.shroudShell.children.forEach((w,i)=>{ w.rotation.y+=dt*w.userData.spin; w.rotation.x+=dt*w.userData.spin*0.5; });
+    }
     if(rec.blackHole){
       rec.blackHole.diskMat.uniforms.uTime.value=t;
       // billboard the photon ring + lensing arcs to face the camera
