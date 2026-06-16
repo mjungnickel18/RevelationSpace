@@ -798,6 +798,72 @@ function makeInterstellarBH(r){
   return {group,diskMat,photonRing,topArc,botArc,glow};
 }
 
+function makeHabitatBand(planetR){
+  // A ring of ~360 tiny habitat points around Yellowstone.
+  // Glitter Band (pre-2510): bright cyan-white, dense, twinkling.
+  // Rust Belt (post-2510): sparse, dim, rust-orange, scattered debris.
+  const group=new THREE.Group();
+  const N=360, inner=planetR*1.8, outer=planetR*2.4;
+  const positions=new Float32Array(N*3);
+  const colors=new Float32Array(N*3);
+  const seeds=[];
+  const rnd=seededRandom(hashStr('GlitterBand'));
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2 + (rnd()-0.5)*0.05;
+    const rad=inner+(outer-inner)*rnd();
+    const tilt=(rnd()-0.5)*planetR*0.18;           // slight thickness
+    positions[i*3]=Math.cos(a)*rad;
+    positions[i*3+1]=tilt;
+    positions[i*3+2]=Math.sin(a)*rad;
+    colors[i*3]=1; colors[i*3+1]=1; colors[i*3+2]=1;
+    seeds.push(rnd());
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  const mat=new THREE.PointsMaterial({size:planetR*0.10,vertexColors:true,
+    transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,
+    sizeAttenuation:true});
+  const pts=new THREE.Points(geo,mat);
+  pts.raycast=()=>{};
+  // gentle ring tilt so it reads as orbital, not equatorial paint
+  group.rotation.x=0.5;
+  group.add(pts);
+  group.userData={pts,seeds,N};
+  return group;
+}
+
+function setHabitatEra(band, era){
+  if(!band||band.userData.era===era) return;
+  band.userData.era=era;
+  const {pts,seeds,N}=band.userData;
+  const col=pts.geometry.attributes.color;
+  const rnd=seededRandom(hashStr('RustBelt'));
+  for(let i=0;i<N;i++){
+    if(era==='glitter'){
+      // bright cyan-white, all present
+      const tw=0.7+seeds[i]*0.3;
+      col.array[i*3]=0.7*tw; col.array[i*3+1]=1.0*tw; col.array[i*3+2]=0.95*tw;
+    } else {
+      // rust belt: ~70% of habitats go dark (ruined), survivors dim rust-orange
+      const survive=rnd()<0.3;
+      if(survive){ col.array[i*3]=0.55; col.array[i*3+1]=0.28; col.array[i*3+2]=0.12; }
+      else { col.array[i*3]=0.10; col.array[i*3+1]=0.06; col.array[i*3+2]=0.05; }
+    }
+  }
+  col.needsUpdate=true;
+  pts.material.opacity = era==='glitter' ? 0.95 : 0.6;
+  pts.material.color = new THREE.Color(0xffffff);
+}
+
+function updateGlitterBand(year){
+  planetsGroup.children.forEach(p=>{
+    const b=p.userData&&p.userData.habitatBand;
+    if(!b) return;
+    setHabitatEra(b, year>=2510 ? 'rust' : 'glitter');
+  });
+}
+
 function makeShipyard(orbR){
   const g=new THREE.Group(); g.rotation.x=Math.PI/6;
   const scaffold=new THREE.Mesh(new THREE.TorusGeometry(orbR,0.04,8,64),
@@ -1721,6 +1787,13 @@ function spawnPlanets(sys, starPos){
       mesh.userData.isEarth=true;
       mesh.userData.earthState=(()=>{const y=parseInt(slider.value);return y<2133?0:y<2157?1:y<2165?2:3;})();
     }
+    if(isYellowstone){
+      const band=makeHabitatBand(r);
+      mesh.add(band);
+      mesh.userData.special='yellowstone';
+      mesh.userData.habitatBand=band;
+      setHabitatEra(band, parseInt(slider.value)>=2510 ? 'rust' : 'glitter');
+    }
     // finger-sized invisible hit target (raycast resolves back to the planet mesh)
     const pickP=new THREE.Mesh(new THREE.SphereGeometry(Math.max(r*2.4,0.3),8,8),
       new THREE.MeshBasicMaterial({visible:false}));
@@ -1935,6 +2008,7 @@ function openPlanet(d){
     :d.special==='newpav'?newPavStatus(yr)
     :d.special==='colony'?colonyStatus(yr)
     :d.isEarth?earthStatus(yr)
+    :d.special==='yellowstone'?(yr>=2510?'Rust Belt — habitats ruined by the Melding Plague':'Glitter Band — 10,000 habitats, the Belle Epoque')
     :d.special==='oldpav'?oldPavStatus(yr):null;
   const statusRow=status
     ?`<div class="stat wide"><b>${esc(status)}</b><span>status · year ${yr}</span></div>`
@@ -2160,6 +2234,7 @@ function updateTimeline(year){
     child.visible = routesVisible && route.startYear<=year;
   });
   // (Bobiverse world-transformation updaters removed — not used by Revelation Space data)
+  updateGlitterBand(year);   // Yellowstone: Glitter Band ↔ Rust Belt at 2510
   // bodies Bill flung at GL 877 vanish from their home system after 2225
   planetsGroup.children.forEach(p=>{
     const cy=p.userData&&p.userData.consumedYear;
@@ -2300,6 +2375,21 @@ function animate(){
 
   // nebula slow spin
   nebulae.forEach(sp=>{ sp.material.rotation+=0.0001; });
+
+  // Yellowstone habitat band: slow orbital drift + twinkle (glitter era only)
+  planetsGroup.children.forEach(p=>{
+    const b=p.userData&&p.userData.habitatBand;
+    if(!b) return;
+    b.rotation.y+=dt*0.06;
+    if(b.userData.era==='glitter'){
+      const col=b.userData.pts.geometry.attributes.color, sd=b.userData.seeds, N=b.userData.N;
+      for(let i=0;i<N;i++){
+        const tw=0.7+0.3*Math.sin(t*3+sd[i]*30);
+        col.array[i*3]=0.7*tw; col.array[i*3+1]=1.0*tw; col.array[i*3+2]=0.95*tw;
+      }
+      col.needsUpdate=true;
+    }
+  });
 
   // shipyards
   shipyards.forEach(({group,points})=>{
