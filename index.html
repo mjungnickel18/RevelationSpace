@@ -412,6 +412,9 @@ const SYSTEMS = [
   { id:"cygni61", name:"61 Cygni", dist:11.4, x:-13.8,y:6.2,z:4.4, color:"#ff9a5a", size_class:"small",
     lore:"A binary ~11.4 ly from Sol. Destination of the sublight Flotilla and home of Sky's Edge \u2014 'Journey's End' before Sky Haussmann's crime renamed it. The deep-history setting of Chasm City.",
     people:["Sky Haussmann","Tanner Mirabel","Cahuella","Argent Reivich"], orbitScale:1.0 },
+  { id:"ararat", name:"Ararat (107 Piscium)", dist:24.3, x:9.6,y:8.8,z:13.2, color:"#ffe0a0", size_class:"medium",
+    lore:"An unremarkable star with a single ocean world — a Pattern Juggler planet. The refugees from Resurgam aboard the Nostalgia for Infinity hide here at the close of Redemption Ark. Clavain's final resting place; the Jugglers preserve him with Galiana and Felka.",
+    people:["Nevil Clavain","Scorpio","Ana Khouri"], orbitScale:1.0 },
 ];
 
 const PLANETS = [
@@ -451,6 +454,13 @@ const PLANETS = [
       "Originally 'Journey's End'; renamed 'Sky's Edge' after Sky Haussmann's atrocity won the Santiago the race.",
       "Indoctrinal viruses spread the cult of Sky; sufferers dream his life \u2014 as Tanner Mirabel does.",
       "Cahuella, an arms dealer, ran the Reptile House here; his wife Gitta's death sets the revenge plot in motion."]},
+  { systemId:"ararat", name:"Ararat", orbit:1.05, special:"ocean", gravity:1.0, gravityEst:true,
+    lore:"A near-total ocean world covered by Pattern Jugglers — a planet-spanning marine intelligence that absorbs and stores the minds of those who swim into it. The Resurgam refugees found a small island colony here.",
+    bio:[{n:"Pattern Jugglers",apex:true,d:"A distributed ocean mind that records and can re-express the personalities of swimmers; neither plant nor animal."}],
+    facts:[
+      "Clavain, buried at sea, is absorbed by the Jugglers and reunited with Galiana and Felka.",
+      "The colony becomes the staging point for the next book, Absolution Gap.",
+      "The Jugglers have appeared across human space; swimming with them is transformative and dangerous."]},
 ];
 
 const ROUTES = [
@@ -464,6 +474,10 @@ const ROUTES = [
     note:"Five sublight freighters (Santiago, Brazilia, Islamabad, Palestine, Baghdad) launched from Mercury in 2083 at a fraction of c. Islamabad and Palestine are lost en route; Sky's casket purge wins the Santiago the race.", maidenVoyage:true, startYear:2083, endYear:2350 },
   { from:"61 Cygni", to:"Epsilon Eridani", traveler:"Tanner Mirabel (pursuit)", dates:"c.2510 - 2517",
     note:"Tanner follows Argent Reivich from Sky's Edge to plague-ruined Chasm City \u2014 a decades-long reefersleep voyage.", strike:true, startYear:2510, endYear:2517 },
+  { from:"Epsilon Eridani", to:"Delta Pavonis", traveler:"The Weapons Chase (Clavain vs Skade)", dates:"c.2615 - 2633",
+    note:"Clavain defects and races Skade's Conjoiner fleet to Resurgam to seize the hell-class cache weapons \u2014 an epic chase driven by inertia-suppression drives.", strike:true, startYear:2615, endYear:2633 },
+  { from:"Delta Pavonis", to:"Ararat (107 Piscium)", traveler:"Nostalgia for Infinity (evacuation)", dates:"c.2634 - 2640",
+    note:"Carrying ~160,000 Resurgam refugees, the Nostalgia for Infinity flees the Inhibitors to the hidden ocean world of Ararat.", maidenVoyage:true, startYear:2634, endYear:2640 },
 ];
 
 // Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
@@ -1812,6 +1826,7 @@ function spawnPlanets(sys, starPos){
     const isYellowstone=p.special==='yellowstone';
     const isCerberus=p.special==='cerberus';
     const isSkysEdge=p.special==='skysedge';
+    const isOcean=p.special==='ocean';
     const isRSgas=p.special==='gasgiant';
     const isBarren=p.special==='barren'||p.special==='rocky';
     const isIceGiant=p.special==='icegiant';
@@ -1836,6 +1851,9 @@ function spawnPlanets(sys, starPos){
     } else if(isSkysEdge){
       map=planetTexture(p.name,'#1f5a3a','#3f8a4a',{blobs:34,caps:true}); // humid green jungle world
       atmoColor='#bfe6c0';
+    } else if(isOcean){
+      map=planetTexture(p.name,'#15506e','#1d7a9a',{blobs:10,caps:true}); // near-total ocean (Pattern Jugglers)
+      atmoColor='#8fd0e8';
     } else if(isRSgas){
       map=planetTexture(p.name,'#9c7a4a','#c9a86a',{bands:true,blobs:8}); // banded gas giant (Roc)
       atmoColor='#e0c490';
