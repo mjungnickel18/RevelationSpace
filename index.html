@@ -374,6 +374,9 @@ const SYSTEMS = [
   { id:"yellowstone_star", name:"p Eridani", dist:26.5, x:-11.2,y:5.4,z:-12.1, color:"#ffeedd", size_class:"medium",
     lore:"Deep-space marker for the lighthugger routes radiating out of the Yellowstone hub.",
     people:[], orbitScale:1.0 },
+  { id:"cygni61", name:"61 Cygni", dist:11.4, x:-13.8,y:6.2,z:4.4, color:"#ff9a5a", size_class:"small",
+    lore:"A binary ~11.4 ly from Sol. Destination of the sublight Flotilla and home of Sky's Edge \u2014 'Journey's End' before Sky Haussmann's crime renamed it. The deep-history setting of Chasm City.",
+    people:["Sky Haussmann","Tanner Mirabel","Cahuella","Argent Reivich"], orbitScale:1.0 },
 ];
 
 const PLANETS = [
@@ -405,6 +408,14 @@ const PLANETS = [
       "Sun Stealer, an ancient AI hiding in Sylveste's head, manipulates him into breaching it.",
       "Reaching the core would alert the Inhibitors \u2014 and doom humanity.",
       "Sylveste and Calvin are scanned into the Hades Matrix; Khouri is nearly crushed by the neutron star's gravity."]},
+  { systemId:"cygni61", name:"Sky's Edge", orbit:1.1, special:"skysedge", gravity:1.0, gravityEst:true,
+    lore:"A humid jungle-and-swamp world orbiting 61 Cygni A, first colonised by the sublight Flotilla and riven by centuries of war between the ships' descendants. Tanner Mirabel's homeworld, steeped in the cult of Sky Haussmann.",
+    hazards:[{n:"Hamadryad",sev:"biological",d:"A dangerous native organism; Tanner is fed to one and barely survives."},
+             {n:"Endemic warfare",sev:"conflict",d:"Generations of conflict between the colony factions."}],
+    facts:[
+      "Originally 'Journey's End'; renamed 'Sky's Edge' after Sky Haussmann's atrocity won the Santiago the race.",
+      "Indoctrinal viruses spread the cult of Sky; sufferers dream his life \u2014 as Tanner Mirabel does.",
+      "Cahuella, an arms dealer, ran the Reptile House here; his wife Gitta's death sets the revenge plot in motion."]},
 ];
 
 const ROUTES = [
@@ -414,6 +425,10 @@ const ROUTES = [
     note:"Sylveste forces the crew to Cerberus/Hades to breach the Amarantin artefact.", strike:true, startYear:2567, endYear:2567 },
   { from:"Sol", to:"Epsilon Eridani", traveler:"Colony ships", dates:"24th c.",
     note:"Early settlement wave to Yellowstone, later perfected by the Demarchists.", maidenVoyage:true, startYear:2350, endYear:2350 },
+  { from:"Sol", to:"61 Cygni", traveler:"The Flotilla (5 generation ships)", dates:"c.2190 - 2350",
+    note:"Five sublight generation ships (Santiago, Brazilia, Islamabad, Palestine, Baghdad) at ~8% c. Sky Haussmann jettisons sleepers to win the race; Journey's End becomes Sky's Edge.", maidenVoyage:true, startYear:2190, endYear:2350 },
+  { from:"61 Cygni", to:"Epsilon Eridani", traveler:"Tanner Mirabel (pursuit)", dates:"c.2510 - 2517",
+    note:"Tanner follows Argent Reivich from Sky's Edge to plague-ruined Chasm City \u2014 a decades-long reefersleep voyage.", strike:true, startYear:2510, endYear:2517 },
 ];
 
 // Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
@@ -454,6 +469,19 @@ const EVENTS = [
     text:"Sajaki's trawl of Khouri's mind frees Sun Stealer into the ship's network. Sudjic attacks Volyova in revenge for Nagorny; Sun Stealer kills Sajaki and Hegazi as the crew turns toward Cerberus." },
   { year:2567, system:"Hades", title:"Into Cerberus — Sylveste's death",
     text:"Sylveste breaches Cerberus's Inhibitor beacon. He and Calvin are scanned into the Hades Matrix; realising he was Sun Stealer's pawn, he detonates his implants. Khouri, crushed by Hades, survives only as a copy; Volyova frees the Captain to kill Sun Stealer." },
+  // --- Chasm City (publication book 2; mostly prequel-era backstory) ---
+  { year:2190, system:"Sol", title:"[Chasm City] The Flotilla departs Earth",
+    text:"Five generation ships — Santiago, Brazilia, Islamabad, Palestine, Baghdad — leave the Solar System at ~8% of light for 61 Cygni, each with 150 waking crew and ~1,000 frozen 'momios'." },
+  { year:2290, system:"61 Cygni", title:"[Chasm City] Sky Haussmann born on the Santiago",
+    text:"Born ~100 years into the voyage to Titus Haussmann's family. Haunted by an AI 'clown' tutor, Sky grows into a brilliant, sociopathic shipboard politician." },
+  { year:2340, system:"61 Cygni", title:"[Chasm City] Sky's atrocity wins the race",
+    text:"Sky sabotages and jettisons rings of sleeper caskets to lighten the Santiago, letting it decelerate harder and arrive first — murdering hundreds of colonists." },
+  { year:2350, system:"61 Cygni", title:"[Chasm City] Journey's End becomes Sky's Edge",
+    text:"The Santiago lands first and claims the best land; the world is renamed 'Sky's Edge' for Haussmann's crime. Condemned, he substitutes a double and vanishes into the jungle as Cahuella." },
+  { year:2500, system:"61 Cygni", title:"[Chasm City] Gitta's death on Sky's Edge",
+    text:"Tanner Mirabel, security chief to arms dealer Cahuella, fails to save Cahuella's wife Gitta during Reivich's ambush. Tanner vows revenge — but Cahuella trawls his mind and takes his identity." },
+  { year:2517, system:"Epsilon Eridani", title:"[Chasm City] Tanner arrives in Chasm City",
+    text:"Seven years after the Melding Plague, 'Tanner' reaches the plague-rotted Chasm City — a slum split into Canopy and Mulch — hunting Reivich, dreaming Sky's life through an indoctrinal virus." },
 ];
 </script>
 <script>
@@ -1673,6 +1701,7 @@ function spawnPlanets(sys, starPos){
     const isResurgam=p.special==='resurgam';
     const isYellowstone=p.special==='yellowstone';
     const isCerberus=p.special==='cerberus';
+    const isSkysEdge=p.special==='skysedge';
     const isRSgas=p.special==='gasgiant';
     const isBarren=p.special==='barren'||p.special==='rocky';
     const isIceGiant=p.special==='icegiant';
@@ -1694,6 +1723,9 @@ function spawnPlanets(sys, starPos){
     } else if(isCerberus){
       map=planetTexture(p.name,'#1a1c22','#33363e',{blobs:14}); // dark artificial shell
       atmoColor='#5a6068';
+    } else if(isSkysEdge){
+      map=planetTexture(p.name,'#1f5a3a','#3f8a4a',{blobs:34,caps:true}); // humid green jungle world
+      atmoColor='#bfe6c0';
     } else if(isRSgas){
       map=planetTexture(p.name,'#9c7a4a','#c9a86a',{bands:true,blobs:8}); // banded gas giant (Roc)
       atmoColor='#e0c490';
