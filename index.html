@@ -99,6 +99,16 @@ input,textarea{-webkit-user-select:text;user-select:text}
   position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;
   display:flex;align-items:center;gap:14px;padding:12px 18px;
 }
+#event-feed{
+  position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:49;
+  width:440px;max-width:calc(100vw - 24px);padding:12px 16px;
+  opacity:0;transition:opacity .35s;pointer-events:none;
+}
+#event-feed.show{opacity:1}
+#event-feed .ev-year{font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+#event-feed .ev-title{font-size:13px;color:#dff6f0;margin:3px 0 4px;font-weight:600}
+#event-feed .ev-text{font-size:11px;line-height:1.5;color:var(--muted)}
+#event-feed .ev-loc{color:var(--accent);opacity:.8}
 .deck-btn{
   font:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
   background:transparent;border:1px solid var(--line);color:var(--accent);
@@ -289,6 +299,8 @@ input,textarea{-webkit-user-select:text;user-select:text}
   </div>
 </div>
 
+<div id="event-feed" class="panel"></div>
+
 <div id="deck" class="panel">
   <button id="play-btn" class="deck-btn" title="Play timeline">▶</button>
   <div id="year-readout">2567<small>YEAR</small></div>
@@ -397,6 +409,24 @@ const ROUTES = [
     note:"Sylveste forces the crew to Cerberus/Hades to breach the Amarantin artefact.", strike:true, startYear:2567, endYear:2567 },
   { from:"Sol", to:"Epsilon Eridani", traveler:"Colony ships", dates:"24th c.",
     note:"Early settlement wave to Yellowstone, later perfected by the Demarchists.", maidenVoyage:true, startYear:2350, endYear:2350 },
+];
+
+// Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
+const EVENTS = [
+  { year:2524, system:"Epsilon Eridani", title:"Khouri hired in Chasm City",
+    text:"Stranded assassin Ana Khouri is recruited by the Mademoiselle to infiltrate the Nostalgia for Infinity and kill Dan Sylveste." },
+  { year:2546, system:"Epsilon Eridani", title:"Nostalgia for Infinity reaches Yellowstone",
+    text:"The plague-stricken lighthugger arrives seeking Sylveste \u2014 only to learn he left for Resurgam 15 years earlier. Khouri comes aboard as gunnery officer." },
+  { year:2551, system:"Delta Pavonis", title:"The dig on Resurgam / war erupts",
+    text:"The novel opens: Sylveste excavates the Amarantin, uncovering a buried city and a sun-reaching idol. Around Yellowstone, the Conjoiner\u2013Demarchist war breaks out." },
+  { year:2551, system:"Delta Pavonis", title:"The buried Amarantin city",
+    text:"Evidence shows the Amarantin reached technological sophistication before The Event wiped them out 900,000 years ago. Cerberus is hinted to matter to them." },
+  { year:2560, system:"Delta Pavonis", title:"Sylveste weds Pascale",
+    text:"Reprieved from house arrest, Sylveste marries Pascale among the excavated city ruins as the colony's politics turn against him." },
+  { year:2566, system:"Delta Pavonis", title:"Singularity scare + abduction",
+    text:"Approaching Resurgam, a rogue cache weapon nearly births an artificial singularity. The triumvirs threaten the colony and abduct Sylveste; he reveals antimatter bombs hidden in his eyes." },
+  { year:2567, system:"Hades", title:"Into Cerberus \u2014 Sylveste's death",
+    text:"Sun Stealer drives Sylveste to breach Cerberus's Inhibitor beacon. Khouri and Volyova try to stop him and fail; Sylveste is scanned into the Hades Matrix and detonates his implants. Khouri, crushed by Hades, survives only as a copy." },
 ];
 </script>
 <script>
@@ -854,6 +884,26 @@ function setHabitatEra(band, era){
   col.needsUpdate=true;
   pts.material.opacity = era==='glitter' ? 0.95 : 0.6;
   pts.material.color = new THREE.Color(0xffffff);
+}
+
+const eventFeedEl = document.getElementById('event-feed');
+let lastEventKey = null;
+function updateEventFeed(year){
+  if(!eventFeedEl) return;
+  const past=EVENTS.filter(e=>e.year<=year).sort((a,b)=>b.year-a.year);
+  const ev=past[0];
+  if(!ev || (year-ev.year)>6){
+    eventFeedEl.classList.remove('show'); lastEventKey=null; return;
+  }
+  const key=ev.year+'|'+ev.title;
+  if(key!==lastEventKey){
+    lastEventKey=key;
+    eventFeedEl.innerHTML=
+      '<div class="ev-year">'+ev.year+' \u00b7 <span class="ev-loc">'+esc(ev.system)+'</span></div>'+
+      '<div class="ev-title">'+esc(ev.title)+'</div>'+
+      '<div class="ev-text">'+esc(ev.text)+'</div>';
+  }
+  eventFeedEl.classList.add('show');
 }
 
 function updateGlitterBand(year){
@@ -2235,6 +2285,7 @@ function updateTimeline(year){
   });
   // (Bobiverse world-transformation updaters removed — not used by Revelation Space data)
   updateGlitterBand(year);   // Yellowstone: Glitter Band ↔ Rust Belt at 2510
+  updateEventFeed(year);
   // bodies Bill flung at GL 877 vanish from their home system after 2225
   planetsGroup.children.forEach(p=>{
     const cy=p.userData&&p.userData.consumedYear;
