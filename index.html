@@ -169,20 +169,22 @@ input,textarea{-webkit-user-select:text;user-select:text}
 }
 .modal-overlay.active{display:flex}
 .modal{
-  width:min(480px,100%);background:var(--panel-solid);border:1px solid var(--accent);
+  width:min(480px,100%);max-height:calc(100vh - 40px);
+  display:flex;flex-direction:column;
+  background:var(--panel-solid);border:1px solid var(--accent);
   clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));
   box-shadow:0 0 60px rgba(95,245,212,.15);
   animation:modal-in .25s ease;
 }
 @keyframes modal-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);flex:0 0 auto}
 .modal-head h2{font-size:12px;letter-spacing:.26em;color:var(--accent);text-transform:uppercase;font-weight:600}
 .x-btn{
   font:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
   background:transparent;border:1px solid var(--line);color:var(--accent);padding:5px 12px;cursor:pointer;transition:all .15s;
 }
 .x-btn:hover{background:var(--accent);color:#02100c}
-.modal-body{padding:18px;font-size:12px;line-height:1.6}
+.modal-body{padding:18px;font-size:12px;line-height:1.6;overflow-y:auto;flex:1 1 auto;min-height:0}
 .modal-body .welcome{color:var(--ink);letter-spacing:.08em;margin-bottom:14px}
 .control-row{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
