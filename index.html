@@ -2095,7 +2095,18 @@ function spawnPlanets(sys, starPos){
           specular:isPoseidon?0x6fa6c9:0x111111, shininess:isPoseidon?26:6, // ocean glint only for Poseidon
           emissiveMap:emiMap, emissive:new THREE.Color(emiColor)})
       : new THREE.MeshLambertMaterial({map});
-    const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,24,24),material);
+    let bodyGeo;
+    if(isHabitat){
+      // artificial habitat: a slim rotating ring/torus, not a planet sphere
+      bodyGeo=new THREE.TorusGeometry(r*0.95, r*0.28, 12, 28);
+    } else if(isComet){
+      // hollowed comet: a small lumpy icosahedron
+      bodyGeo=new THREE.IcosahedronGeometry(r*0.8, 0);
+    } else {
+      bodyGeo=new THREE.SphereGeometry(r,24,24);
+    }
+    const mesh=new THREE.Mesh(bodyGeo,material);
+    if(isHabitat) mesh.rotation.x=Math.PI*0.32; // tilt the ring so it reads as 3D
     let parent=p.moonOf?made[p.moonOf]:null;
     let pairInfo=null;
     if(p.binaryPair){
@@ -2123,12 +2134,12 @@ function spawnPlanets(sys, starPos){
     const AXIAL_TILT={Earth:23.4,Mars:25.2,Saturn:26.7,Neptune:28.3,Jupiter:3.1,Uranus:97.8};
     if(isQuilt) mesh.rotation.z=Math.PI/2;   // KKP rolls on its side (~90°)
     else if(AXIAL_TILT[p.name]!==undefined) mesh.rotation.z=AXIAL_TILT[p.name]*Math.PI/180;
-    // thin atmosphere rim
-    const atmoOp=isRag?0.08+0.32*ragT:isOldPav?(pavHarvested?0.08:0.3):isEden?0.26:isJab?0.34:isCapital?0.2:0.22;
+    // thin atmosphere rim (artificial habitats get only a faint running-light glow; comets almost none)
+    const atmoOp=isHabitat?0.14:isComet?0.08:isRag?0.08+0.32*ragT:isOldPav?(pavHarvested?0.08:0.3):isEden?0.26:isJab?0.34:isCapital?0.2:0.22;
     const atmo=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex,
       color:new THREE.Color(atmoColor),transparent:true,
       opacity:atmoOp,blending:THREE.AdditiveBlending,depthWrite:false}));
-    atmo.scale.setScalar(r*(isRag?4.2:3.2));
+    atmo.scale.setScalar(r*(isRag?4.2:isHabitat?2.4:isComet?2.0:3.2));
     atmo.raycast=()=>{};
     mesh.add(atmo);
     if(p.name==='Earth') mesh.userData.atmoMesh=atmo;
