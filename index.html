@@ -305,12 +305,14 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="deck" class="panel">
   <button id="play-btn" class="deck-btn" title="Play timeline">▶</button>
   <div id="year-readout">2567<small>YEAR</small></div>
+  <button id="ev-back" class="deck-btn step" title="Previous event">⏮</button>
   <button id="step-back" class="deck-btn step" title="Previous year">◀</button>
   <div id="slider-wrap">
     <div id="ticks"></div>
     <input type="range" id="timeline-slider" min="2500" max="2580" value="2567" />
   </div>
   <button id="step-fwd" class="deck-btn step" title="Next year">▶</button>
+  <button id="ev-fwd" class="deck-btn step" title="Next event">⏭</button>
   <button id="toggle-routes" class="deck-btn on">Routes</button>
   <button id="toggle-grid" class="deck-btn on">Grid</button>
 </div>
@@ -2309,6 +2311,20 @@ function stepYear(delta){
 }
 document.getElementById('step-back').addEventListener('click',()=>stepYear(-1));
 document.getElementById('step-fwd').addEventListener('click',()=>stepYear(1));
+
+function jumpToEvent(dir){
+  if(playing){ playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
+  const cur=parseInt(slider.value);
+  // distinct, sorted event years
+  const years=[...new Set(EVENTS.map(e=>e.year))].sort((a,b)=>a-b);
+  let target;
+  if(dir>0) target=years.find(y=>y>cur);
+  else target=[...years].reverse().find(y=>y<cur);
+  if(target===undefined) return; // already past the last / before the first event
+  slider.value=target; setYearLabel(target); updateTimeline(target);
+}
+document.getElementById('ev-back').addEventListener('click',()=>jumpToEvent(-1));
+document.getElementById('ev-fwd').addEventListener('click',()=>jumpToEvent(1));
 addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'&&e.target.type==='text') return; // not while searching
   if(e.key==='ArrowLeft'){ stepYear(-1); }
