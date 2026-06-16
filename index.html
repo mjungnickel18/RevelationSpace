@@ -291,7 +291,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="hud-top">
   <div id="brand" class="panel">
     <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
-    <p>Revelation Space · Book 1 · 2540–2567</p>
+    <p>Revelation Space · Book 1 · 2360–2567</p>
   </div>
   <div id="search-wrap">
     <span id="search-glyph">⌖</span>
@@ -309,7 +309,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <button id="step-back" class="deck-btn step" title="Previous year">◀</button>
   <div id="slider-wrap">
     <div id="ticks"></div>
-    <input type="range" id="timeline-slider" min="2500" max="2580" value="2567" />
+    <input type="range" id="timeline-slider" min="2360" max="2580" value="2567" />
   </div>
   <button id="step-fwd" class="deck-btn step" title="Next year">▶</button>
   <button id="ev-fwd" class="deck-btn step" title="Next event">⏭</button>
@@ -418,20 +418,42 @@ const ROUTES = [
 
 // Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
 const EVENTS = [
+  { year:2372, system:"Epsilon Eridani", title:"The Eighty",
+    text:"Calvin Sylveste runs the destructive-scan experiment that copies 80 volunteers into software. Most die or corrupt; the disaster haunts the Sylveste name. (Backstory, recalled throughout the novel.)" },
+  { year:2405, system:"Epsilon Eridani", title:"Sylveste's Shroud expedition departs",
+    text:"Dan Sylveste leaves Yellowstone for Lascaille's Shroud, chasing the secret Philip Lascaille brought back. His partner is lost; she will return as the Mademoiselle." },
+  { year:2441, system:"Epsilon Eridani", title:"Return from the Shroud",
+    text:"Sylveste comes back from the Shroud changed and obsessed — the only human to fly into a Shroud and survive. The Shrouders' warning about the Inhibitors festers in him." },
+  { year:2491, system:"Epsilon Eridani", title:"Resurgam expedition departs",
+    text:"Sylveste's lighthugger Lorean leaves Yellowstone for Delta Pavonis to excavate the Amarantin. The transit takes ~20 years." },
+  { year:2510, system:"Epsilon Eridani", title:"The Melding Plague",
+    text:"A nanotech plague devastates Chasm City and the Glitter Band, ending the Belle Epoque. The 10,000 habitats decay into the Rust Belt; the Captain of the Nostalgia for Infinity is among the infected." },
+  { year:2511, system:"Delta Pavonis", title:"Lorean reaches Resurgam",
+    text:"Sylveste's expedition arrives and founds the colony to dig up the Amarantin — a winged race wiped out 900,000 years ago in 'The Event'." },
   { year:2524, system:"Epsilon Eridani", title:"Khouri hired in Chasm City",
-    text:"Stranded assassin Ana Khouri is recruited by the Mademoiselle to infiltrate the Nostalgia for Infinity and kill Dan Sylveste." },
+    text:"Stranded soldier-turned-Shadowplay-assassin Ana Khouri is recruited by the Mademoiselle to infiltrate the Nostalgia for Infinity and kill Sylveste." },
+  { year:2531, system:"Delta Pavonis", title:"Mutiny strands the colony",
+    text:"Alicia, Sylveste's ex-wife, leads a mutiny that seizes the expedition's only lighthugger and leaves Resurgam — stranding the colonists for good." },
+  { year:2543, system:"Delta Pavonis", title:"Nagorny killed aboard the ship",
+    text:"En route, gunnery officer Boris Nagorny — secretly infected by Sun Stealer hiding in the gunnery systems — goes insane. Volyova kills him in self-defence and hides the death." },
   { year:2546, system:"Epsilon Eridani", title:"Nostalgia for Infinity reaches Yellowstone",
-    text:"The plague-stricken lighthugger arrives seeking Sylveste \u2014 only to learn he left for Resurgam 15 years earlier. Khouri comes aboard as gunnery officer." },
-  { year:2551, system:"Delta Pavonis", title:"The dig on Resurgam / war erupts",
-    text:"The novel opens: Sylveste excavates the Amarantin, uncovering a buried city and a sun-reaching idol. Around Yellowstone, the Conjoiner\u2013Demarchist war breaks out." },
-  { year:2551, system:"Delta Pavonis", title:"The buried Amarantin city",
-    text:"Evidence shows the Amarantin reached technological sophistication before The Event wiped them out 900,000 years ago. Cerberus is hinted to matter to them." },
+    text:"The plague-stricken lighthugger arrives seeking Sylveste (to channel his father Calvin and cure the Captain) — only to learn he left for Resurgam decades ago. Khouri is 'recruited' as the new gunnery officer." },
+  { year:2551, system:"Delta Pavonis", title:"The dig & the buried city",
+    text:"Novel opens: Sylveste, aided by journalist Pascale, uncovers a buried Amarantin city and a sun-reaching idol — proof the Amarantin were far more advanced than believed." },
+  { year:2551, system:"Epsilon Eridani", title:"Conjoiner–Demarchist war erupts",
+    text:"War breaks out around Yellowstone between Demarchists and Conjoiners; the Ferrisville Convention is established." },
+  { year:2551, system:"Delta Pavonis", title:"Girardieau's coup",
+    text:"Nils Girardieau's Inundationists seize Resurgam and imprison Sylveste, opposing his obsession with the Amarantin over terraforming." },
   { year:2560, system:"Delta Pavonis", title:"Sylveste weds Pascale",
-    text:"Reprieved from house arrest, Sylveste marries Pascale among the excavated city ruins as the colony's politics turn against him." },
-  { year:2566, system:"Delta Pavonis", title:"Singularity scare + abduction",
-    text:"Approaching Resurgam, a rogue cache weapon nearly births an artificial singularity. The triumvirs threaten the colony and abduct Sylveste; he reveals antimatter bombs hidden in his eyes." },
-  { year:2567, system:"Hades", title:"Into Cerberus \u2014 Sylveste's death",
-    text:"Sun Stealer drives Sylveste to breach Cerberus's Inhibitor beacon. Khouri and Volyova try to stop him and fail; Sylveste is scanned into the Hades Matrix and detonates his implants. Khouri, crushed by Hades, survives only as a copy." },
+    text:"Reprieved from house arrest, Sylveste marries Pascale Girardieau among the city ruins — not knowing she began as her father's spy." },
+  { year:2566, system:"Delta Pavonis", title:"Cache-weapon singularity scare",
+    text:"Approaching Resurgam, a rogue cache weapon activates and must be jettisoned; it detonates into an artificial singularity that nearly swallows the ship." },
+  { year:2566, system:"Delta Pavonis", title:"Volyova's ultimatum & abduction",
+    text:"Volyova threatens to destroy a Resurgam settlement every day until Sylveste is surrendered — and makes good on it. The colony hands him over; aboard, he reveals antimatter bombs hidden in his artificial eyes." },
+  { year:2567, system:"Delta Pavonis", title:"Sun Stealer breaks loose",
+    text:"Sajaki's trawl of Khouri's mind frees Sun Stealer into the ship's network. Sudjic attacks Volyova in revenge for Nagorny; Sun Stealer kills Sajaki and Hegazi as the crew turns toward Cerberus." },
+  { year:2567, system:"Hades", title:"Into Cerberus — Sylveste's death",
+    text:"Sylveste breaches Cerberus's Inhibitor beacon. He and Calvin are scanned into the Hades Matrix; realising he was Sun Stealer's pawn, he detonates his implants. Khouri, crushed by Hades, survives only as a copy; Volyova frees the Captain to kill Sun Stealer." },
 ];
 </script>
 <script>
@@ -897,7 +919,7 @@ function updateEventFeed(year){
   if(!eventFeedEl) return;
   const past=EVENTS.filter(e=>e.year<=year).sort((a,b)=>b.year-a.year);
   const ev=past[0];
-  if(!ev || (year-ev.year)>6){
+  if(!ev || (year-ev.year)>12){
     eventFeedEl.classList.remove('show'); lastEventKey=null; return;
   }
   const key=ev.year+'|'+ev.title;
@@ -2305,7 +2327,7 @@ slider.addEventListener('input',e=>{
 });
 function stepYear(delta){
   if(playing){ playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
-  const min=parseInt(slider.min)||2500, max=parseInt(slider.max)||2580;
+  const min=parseInt(slider.min)||2360, max=parseInt(slider.max)||2580;
   const y=Math.min(max,Math.max(min,parseInt(slider.value)+delta));
   slider.value=y; setYearLabel(y); updateTimeline(y);
 }
@@ -2344,7 +2366,7 @@ playBtn.addEventListener('click',()=>{
   playing=!playing;
   playBtn.textContent=playing?'❚❚':'▶';
   playBtn.classList.toggle('on',playing);
-  if(playing && parseInt(slider.value)>=2580){ slider.value=2500; }
+  if(playing && parseInt(slider.value)>=2580){ slider.value=2360; }
 });
 
 /* ============================================================
@@ -2646,7 +2668,7 @@ function drawVRPanel(title, body){
   // timeline bar
   const tlY=H-120, tlX=34, tlW=W-68;
   x.fillStyle='rgba(95,245,212,0.18)'; x.fillRect(tlX,tlY,tlW,12);
-  const yr=parseInt(slider.value), frac=(yr-2500)/(2580-2500);
+  const yr=parseInt(slider.value), frac=(yr-2360)/(2580-2360);
   x.fillStyle='#5ff5d4'; x.fillRect(tlX,tlY,tlW*frac,12);
   x.beginPath(); x.arc(tlX+tlW*frac,tlY+6,14,0,7); x.fill();
   x.fillStyle='#bfe9e2'; x.font='600 30px monospace';
@@ -2717,7 +2739,7 @@ function vrPanelClick(u,v){
   if(vrTimelineRect && u>=vrTimelineRect.x && u<=vrTimelineRect.x+vrTimelineRect.w &&
      v>=vrTimelineRect.y-0.03 && v<=vrTimelineRect.y+vrTimelineRect.h){
     const frac=(u-vrTimelineRect.x)/vrTimelineRect.w;
-    const yr=Math.round(2500+frac*(2580-2500));
+    const yr=Math.round(2360+frac*(2580-2360));
     slider.value=yr; setYearLabel(yr); updateTimeline(yr); redrawVRPanel();
   }
 }
@@ -2728,7 +2750,7 @@ function vrPanelDrag(u,v){
   if(u>=vrTimelineRect.x-0.02 && u<=vrTimelineRect.x+vrTimelineRect.w+0.02 &&
      v>=vrTimelineRect.y-0.06 && v<=vrTimelineRect.y+vrTimelineRect.h+0.04){
     const frac=THREE.MathUtils.clamp((u-vrTimelineRect.x)/vrTimelineRect.w,0,1);
-    const yr=Math.round(2500+frac*(2580-2500));
+    const yr=Math.round(2360+frac*(2580-2360));
     if(yr!==parseInt(slider.value)){ slider.value=yr; setYearLabel(yr); updateTimeline(yr); }
     redrawVRPanel();
   }
