@@ -108,7 +108,8 @@ input,textarea{-webkit-user-select:text;user-select:text}
 #event-feed .ev-year{font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
 #event-feed .ev-title{font-size:13px;color:#dff6f0;margin:3px 0 4px;font-weight:600}
 #event-feed .ev-text{font-size:11px;line-height:1.5;color:var(--muted)}
-#event-feed .ev-loc{color:var(--accent);opacity:.8}
+#event-feed .ev-loc{color:var(--accent);opacity:.85;cursor:pointer;pointer-events:auto;border-bottom:1px dashed rgba(95,245,212,.5)}
+#event-feed .ev-loc:hover{opacity:1;text-shadow:0 0 10px rgba(95,245,212,.6)}
 .deck-btn{
   font:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
   background:transparent;border:1px solid var(--line);color:var(--accent);
@@ -948,6 +949,12 @@ function setHabitatEra(band, era){
 }
 
 const eventFeedEl = document.getElementById('event-feed');
+if(eventFeedEl){
+  eventFeedEl.addEventListener('click',e=>{
+    const loc=e.target.closest('.ev-loc');
+    if(loc && loc.dataset.sys) flyToSystem(loc.dataset.sys);
+  });
+}
 let lastEventKey = null;
 function updateEventFeed(year){
   if(!eventFeedEl) return;
@@ -960,7 +967,7 @@ function updateEventFeed(year){
   if(key!==lastEventKey){
     lastEventKey=key;
     eventFeedEl.innerHTML=
-      '<div class="ev-year">'+ev.year+' \u00b7 <span class="ev-loc">'+esc(ev.system)+'</span></div>'+
+      '<div class="ev-year">'+ev.year+' \u00b7 <span class="ev-loc" data-sys="'+esc(ev.system)+'" title="Fly to '+esc(ev.system)+'">'+esc(ev.system)+' \u2192</span></div>'+
       '<div class="ev-title">'+esc(ev.title)+'</div>'+
       '<div class="ev-text">'+esc(ev.text)+'</div>';
   }
