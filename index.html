@@ -373,6 +373,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
         <div class="legend-row"><span class="swatch dot crimson"></span>Lighthugger strike route</div>
         <div class="legend-row"><span class="swatch ring"></span>Amarantin artefact (Cerberus)</div>
         <div class="legend-row"><span class="swatch dot" style="background:#b08aff"></span>Shroud — warped spacetime (approx. position)</div>
+        <div class="legend-row"><span class="swatch dot acid"></span>Neutron-star computer (Hades Matrix)</div>
       </div>
     </div>
   </div>
@@ -402,7 +403,7 @@ const SYSTEMS = [
     lore:"Sun-like star ~19.9 ly from Sol. Holds Resurgam \u2014 the dead homeworld of the Amarantin \u2014 and, ten light-hours out, its neutron-star twin Hades.",
     people:["Dan Sylveste","Ilia Volyova","Triumvirate"], orbitScale:1.0 },
   { id:"hades", name:"Hades", dist:19.9, x:8.9,y:-5.4,z:-18.1, color:"#bfe0ff", size_class:"neutron",
-    lore:"A neutron star ten light-hours from Delta Pavonis \u2014 in truth a vast Amarantin neutron-computer. Its single moon is the artificial world Cerberus.",
+    lore:"A neutron star ten light-hours from Delta Pavonis \u2014 in truth the Hades Matrix: a vast Amarantin computer and cross-time signalling device running a complete simulation of Sylveste and surviving Amarantin. The Inhibitors leave it untouched. Its single moon is the artificial world Cerberus.",
     people:[], orbitScale:1.0 },
   { id:"ross248", name:"Ross 248", dist:10.3, x:-9.1,y:3.8,z:1.2, color:"#ff8a6a", size_class:"small",
     lore:"Red dwarf, ~10.3 ly. Holds Diadem, an early Conjoiner world \u2014 referenced as deep-space frontier.",
@@ -419,6 +420,9 @@ const SYSTEMS = [
   { id:"lascaille_shroud", name:"Lascaille's Shroud", dist:14.0, x:-4.8,y:-9.2,z:11.6, color:"#b08aff", size_class:"shroud", posApprox:true,
     lore:"Not a star but a region of restructured spacetime in the trans-Tau Ceti sector — one of the Shrouds. Inside hide the Shrouders (a faction of surviving Amarantin, the 'Banished'), their minds possibly encoded into spacetime itself. The exact position is never given in the books; this marker shows the sector, not precise coordinates.",
     people:["Philip Lascaille","Dan Sylveste","Carine Lefevre"], orbitScale:1.0 },
+  { id:"bernsdottir_shroud", name:"Bernsdottir's Shroud", dist:16.5, x:-2.1,y:-11.4,z:9.0, color:"#9a78e8", size_class:"shroud", posApprox:true,
+    lore:"The first Shroud ever detected, found by Bernsdottir in 2338 \u2014 a region of restructured spacetime like Lascaille's. The Shrouders are a faction of the Banished Amarantin who hid inside these bubbles to escape the Inhibitors; another faction instead retreated into Hades via Cerberus. Position approximate \u2014 the books give only the broad region.",
+    people:[], orbitScale:1.0 },
 ];
 
 const PLANETS = [
@@ -450,6 +454,26 @@ const PLANETS = [
       "Sun Stealer, an ancient AI hiding in Sylveste's head, manipulates him into breaching it.",
       "Reaching the core would alert the Inhibitors \u2014 and doom humanity.",
       "Sylveste and Calvin are scanned into the Hades Matrix; Khouri is nearly crushed by the neutron star's gravity."]},
+  { systemId:"epsilon_eridani", name:"Tangerine Dream", orbit:2.2, special:"gasgiant", gravity:2.6, gravityEst:true,
+    lore:"The supergiant gas giant of the Epsilon Eridani system, ringed with orbital platforms and automated sentries. Antoinette Bax buries her father in its clouds and first meets Clavain there; in the Conjoiner-Demarchist war its metallic-hydrogen depths are a strategic fuel source.",
+    facts:[
+      "Possibly corresponds to the real exoplanet candidate Epsilon Eridani b.",
+      "Its hydrogen \u2014 gaseous, liquid and metallic \u2014 fuels Demarchist fusion ships after the Plague cripples antimatter production."]},
+  { systemId:"ross248", name:"Diadem", orbit:1.0, special:"ice", gravity:0.95, gravityEst:true,
+    lore:"An icy world at Ross 248 \u2014 the first planet explored by the Conjoiners beyond the Solar System. Settled a century earlier by Americans who sent self-replicating robots and frozen embryos; the grown colonists destroyed the robots for 'mollycoddling' them, and the colony then collapsed.",
+    facts:[
+      "Setting of the early Conjoiner story 'Glacial'.",
+      "An object lesson in colonies seeded by machine rather than by living crew."]},
+  { systemId:"epsilon_eridani", name:"Conjoiner Mother Nest", orbit:1.55, special:"habitat", gravity:0.0, gravityEst:true,
+    lore:"The hidden headquarters of the Conjoiners in the Epsilon Eridani system \u2014 the hive from which Skade's Closed Council operates. Where Galiana's Inhibitor-touched body is returned, and where Clavain is pressed to join the leadership before he defects.",
+    facts:[
+      "Home of the Closed/Night Council that secretly plans to abandon humanity.",
+      "Clavain, Remontoire and Felka are based here before the weapons chase."]},
+  { systemId:"epsilon_eridani", name:"The Hollow Comet (secret fleet)", orbit:3.4, special:"comet", gravity:0.0, gravityEst:true,
+    lore:"A hollowed-out comet far out in the Epsilon Eridani system where the Conjoiners secretly build a fleet of advanced inertia-suppression starships. Skade brings Clavain here; realising the fleet is meant to evacuate only the Conjoiners, he defects and is nearly killed escaping.",
+    facts:[
+      "Birthplace of the inertia-suppression (Conjoiner 'state-of-the-art') drives.",
+      "Skade is mutilated during Clavain's escape and rebuilt for revenge."]},
   { systemId:"cygni61", name:"Sky's Edge", orbit:1.1, special:"skysedge", gravity:1.0, gravityEst:true,
     lore:"A humid jungle-and-swamp world orbiting 61 Cygni A, first colonised by the sublight Flotilla and riven by centuries of war between the ships' descendants. Tanner Mirabel's homeworld, steeped in the cult of Sky Haussmann.",
     hazards:[{n:"Hamadryad",sev:"biological",d:"A dangerous native organism; Tanner is fed to one and barely survives."},
@@ -486,6 +510,8 @@ const ROUTES = [
 
 // Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
 const EVENTS = [
+  { year:2338, system:"Bernsdottir's Shroud", title:"The first Shroud detected",
+    text:"Bernsdottir discovers the first Shroud — a region of restructured spacetime. Decades of study by the Sylveste Institute follow, leading eventually to Lascaille's fateful contact in 2373." },
   { year:2372, system:"Epsilon Eridani", title:"The Eighty",
     text:"Calvin Sylveste runs the destructive-scan experiment that copies 80 volunteers into software. Most die or corrupt; the disaster haunts the Sylveste name. (Backstory, recalled throughout the novel.)" },
   { year:2373, system:"Lascaille's Shroud", title:"Lascaille returns from the Shroud",
@@ -1861,6 +1887,9 @@ function spawnPlanets(sys, starPos){
     const isCerberus=p.special==='cerberus';
     const isSkysEdge=p.special==='skysedge';
     const isOcean=p.special==='ocean';
+    const isIce=p.special==='ice';
+    const isHabitat=p.special==='habitat';
+    const isComet=p.special==='comet';
     const isRSgas=p.special==='gasgiant';
     const isBarren=p.special==='barren'||p.special==='rocky';
     const isIceGiant=p.special==='icegiant';
@@ -1888,6 +1917,15 @@ function spawnPlanets(sys, starPos){
     } else if(isOcean){
       map=planetTexture(p.name,'#15506e','#1d7a9a',{blobs:10,caps:true}); // near-total ocean (Pattern Jugglers)
       atmoColor='#8fd0e8';
+    } else if(isIce){
+      map=planetTexture(p.name,'#9fb8c8','#dfeef5',{blobs:18,caps:true}); // icy white-blue world
+      atmoColor='#dff2ff';
+    } else if(isHabitat){
+      map=planetTexture(p.name,'#2a3038','#6a7480',{blobs:8}); // metallic artificial habitat
+      atmoColor='#aebcc8';
+    } else if(isComet){
+      map=planetTexture(p.name,'#1c2228','#48566a',{blobs:6}); // dark icy hollowed comet
+      atmoColor='#7fb0c8';
     } else if(isRSgas){
       map=planetTexture(p.name,'#9c7a4a','#c9a86a',{bands:true,blobs:8}); // banded gas giant (Roc)
       atmoColor='#e0c490';
