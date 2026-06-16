@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bobiverse Starmap — Tactical Explorer</title>
+<title>Revelation Space Starmap — Tactical Explorer</title>
 <style>
 :root{
   --void:#030609;
@@ -401,7 +401,7 @@ const ROUTES = [
 </script>
 <script>
 /* ============================================================
-   Bobiverse Starmap — recreation of sgtriz/bobiverse-stars (MIT)
+   Revelation Space Starmap — worlds of Alastair Reynolds
    Single-file build · Three.js r128 · custom orbit controls
    ============================================================ */
 (function(){
@@ -1838,10 +1838,10 @@ function missionCard(route,currentName){
 }
 
 const SYSTEM_NOTES={
-  'Sol':['Battle of Terra','April 2257: the Others’ fleet was destroyed here. Earth’s 15 million survivors had already shipped out aboard the captured ark Bellerophon.'],
-  'Epsilon Eridani':['Primary Skunk Works hub','Bill developed the Icarus and Daedalus probes here.'],
-  'Sagittarius A*':['Federation capital proximity','~7 light-years from the galactic center. Future wormhole tech was discovered here.'],
-  'Eta Leporis':['Timeline discrepancy','Bender arrived first but went missing; Bob One tracked his trail in 2331.']
+  'Epsilon Eridani':['Yellowstone & the Glitter Band','The cultural capital of human space \u2014 until the Melding Plague reduced the Glitter Band to the Rust Belt and Chasm City to a ruin.'],
+  'Delta Pavonis':['Resurgam & the Amarantin','Sylveste\u2019s colony excavates a 900,000-year-dead avian civilisation that reached the stars \u2014 then vanished in a single cataclysm.'],
+  'Hades':['Neutron-star computer','A neutron star that is secretly a vast Amarantin machine; its moon Cerberus hides an Inhibitor beacon. Sylveste dies reaching its core in 2567.'],
+  'Sol':['Depopulated cradle','By the 26th century, humanity\u2019s birthworld is a backwater; the action has moved to the colony systems.']
 };
 
 function openSystem(sys){
@@ -1897,8 +1897,8 @@ function openSystem(sys){
     <div class="stat-grid">
       <div class="stat"><b>${sys.dist}</b><span>ly from Sol</span></div>
       <div class="stat"><b>${esc(sys.size_class)}</b><span>star class</span></div>
-      <div class="stat wide"><b>${bobs.length?esc(bobs.join(', ')):'— none logged —'}</b><span>Bobs in system</span></div>
-      ${discovered!==undefined&&discovered>0?`<div class="stat wide"><b>${discovered}</b><span>first Bob arrival</span></div>`:''}
+      <div class="stat wide"><b>${bobs.length?esc(bobs.join(', ')):'— none logged —'}</b><span>People / crew</span></div>
+      ${discovered!==undefined&&discovered>0?`<div class="stat wide"><b>${discovered}</b><span>first arrival (year)</span></div>`:''}
     </div>
     <p class="lore">${esc(sys.lore)}</p>
     ${noteHTML}${planetsHTML}${bioSysHTML}${hazSysHTML}${factsSysHTML}${logsHTML}`;
@@ -2159,12 +2159,7 @@ function updateTimeline(year){
     if(!route) return;
     child.visible = routesVisible && route.startYear<=year;
   });
-  updateRagnarok(year);
-  updatePoseidon(year);
-  updateNewPav(year);
-  updateColony(year);
-  updateEarth(year);
-  updateOldPav(year);
+  // (Bobiverse world-transformation updaters removed — not used by Revelation Space data)
   // bodies Bill flung at GL 877 vanish from their home system after 2225
   planetsGroup.children.forEach(p=>{
     const cy=p.userData&&p.userData.consumedYear;
