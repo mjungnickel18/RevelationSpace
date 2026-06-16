@@ -291,7 +291,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="hud-top">
   <div id="brand" class="panel">
     <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
-    <p>Revelation Space · Book 1 · 2360–2567</p>
+    <p>Revelation Space · Books 1–2 · 2180–2567</p>
   </div>
   <div id="search-wrap">
     <span id="search-glyph">⌖</span>
@@ -309,7 +309,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <button id="step-back" class="deck-btn step" title="Previous year">◀</button>
   <div id="slider-wrap">
     <div id="ticks"></div>
-    <input type="range" id="timeline-slider" min="2360" max="2580" value="2567" />
+    <input type="range" id="timeline-slider" min="2180" max="2580" value="2567" />
   </div>
   <button id="step-fwd" class="deck-btn step" title="Next year">▶</button>
   <button id="ev-fwd" class="deck-btn step" title="Next event">⏭</button>
@@ -2359,7 +2359,7 @@ slider.addEventListener('input',e=>{
 });
 function stepYear(delta){
   if(playing){ playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
-  const min=parseInt(slider.min)||2360, max=parseInt(slider.max)||2580;
+  const min=parseInt(slider.min)||2180, max=parseInt(slider.max)||2580;
   const y=Math.min(max,Math.max(min,parseInt(slider.value)+delta));
   slider.value=y; setYearLabel(y); updateTimeline(y);
 }
@@ -2398,7 +2398,7 @@ playBtn.addEventListener('click',()=>{
   playing=!playing;
   playBtn.textContent=playing?'❚❚':'▶';
   playBtn.classList.toggle('on',playing);
-  if(playing && parseInt(slider.value)>=2580){ slider.value=2360; }
+  if(playing && parseInt(slider.value)>=2580){ slider.value=2180; }
 });
 
 /* ============================================================
@@ -2700,7 +2700,7 @@ function drawVRPanel(title, body){
   // timeline bar
   const tlY=H-120, tlX=34, tlW=W-68;
   x.fillStyle='rgba(95,245,212,0.18)'; x.fillRect(tlX,tlY,tlW,12);
-  const yr=parseInt(slider.value), frac=(yr-2360)/(2580-2360);
+  const yr=parseInt(slider.value), frac=(yr-2180)/(2580-2180);
   x.fillStyle='#5ff5d4'; x.fillRect(tlX,tlY,tlW*frac,12);
   x.beginPath(); x.arc(tlX+tlW*frac,tlY+6,14,0,7); x.fill();
   x.fillStyle='#bfe9e2'; x.font='600 30px monospace';
@@ -2771,7 +2771,7 @@ function vrPanelClick(u,v){
   if(vrTimelineRect && u>=vrTimelineRect.x && u<=vrTimelineRect.x+vrTimelineRect.w &&
      v>=vrTimelineRect.y-0.03 && v<=vrTimelineRect.y+vrTimelineRect.h){
     const frac=(u-vrTimelineRect.x)/vrTimelineRect.w;
-    const yr=Math.round(2360+frac*(2580-2360));
+    const yr=Math.round(2180+frac*(2580-2180));
     slider.value=yr; setYearLabel(yr); updateTimeline(yr); redrawVRPanel();
   }
 }
@@ -2782,7 +2782,7 @@ function vrPanelDrag(u,v){
   if(u>=vrTimelineRect.x-0.02 && u<=vrTimelineRect.x+vrTimelineRect.w+0.02 &&
      v>=vrTimelineRect.y-0.06 && v<=vrTimelineRect.y+vrTimelineRect.h+0.04){
     const frac=THREE.MathUtils.clamp((u-vrTimelineRect.x)/vrTimelineRect.w,0,1);
-    const yr=Math.round(2360+frac*(2580-2360));
+    const yr=Math.round(2180+frac*(2580-2180));
     if(yr!==parseInt(slider.value)){ slider.value=yr; setYearLabel(yr); updateTimeline(yr); }
     redrawVRPanel();
   }
