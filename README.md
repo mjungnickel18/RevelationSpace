@@ -1,6 +1,6 @@
-# Revelation Space Starmap — Books 1–3
+# Revelation Space Starmap — Books 1–4
 
-An interactive 3D star map of the worlds of **Revelation Space**, the first novel in Alastair Reynolds' hard-SF space-opera series. Systems, planets, lighthugger routes, and the events of the book (2083–2634), rendered as a single self-contained HTML file.
+An interactive 3D star map of the worlds of **Revelation Space**, the first novel in Alastair Reynolds' hard-SF space-opera series. Systems, planets, lighthugger routes, and the events of the book (2083–2727), rendered as a single self-contained HTML file.
 
 ![Preview of the worlds](preview.png)
 
@@ -17,7 +17,7 @@ This first version maps the core geography of *Revelation Space* (2000):
 ## Features
 
 - 3D tactical starmap (Three.js) with glow-sprite stars, a light-year grid centred on Sol, projected labels, and a selection reticle.
-- Timeline 2083–2634 with autoplay.
+- Timeline 2083–2727 with autoplay.
 - Click any star or planet to fly to it; click planets to follow their orbit.
 - Telemetry sidebar with lore, native biology (the Amarantin), hazards, and "Did you know?" facts.
 - Search across systems, planets, and people.

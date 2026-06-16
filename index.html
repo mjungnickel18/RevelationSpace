@@ -312,7 +312,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="hud-top">
   <div id="brand" class="panel">
     <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
-    <p>Revelation Space · Books 1–3 · 2083–2634</p>
+    <p>Revelation Space · Books 1–4 · 2083–2727</p>
   </div>
   <div id="search-wrap">
     <span id="search-glyph">⌖</span>
@@ -330,7 +330,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <button id="step-back" class="deck-btn step" title="Previous year">◀</button>
   <div id="slider-wrap">
     <div id="ticks"></div>
-    <input type="range" id="timeline-slider" min="2080" max="2700" value="2567" />
+    <input type="range" id="timeline-slider" min="2080" max="2740" value="2567" />
   </div>
   <button id="step-fwd" class="deck-btn step" title="Next year">▶</button>
   <button id="ev-fwd" class="deck-btn step" title="Next event">⏭</button>
@@ -414,7 +414,7 @@ const SYSTEMS = [
   { id:"cygni61", name:"61 Cygni", dist:11.4, x:-13.8,y:6.2,z:4.4, color:"#ff9a5a", size_class:"small",
     lore:"A binary ~11.4 ly from Sol. Destination of the sublight Flotilla and home of Sky's Edge \u2014 'Journey's End' before Sky Haussmann's crime renamed it. The deep-history setting of Chasm City.",
     people:["Sky Haussmann","Tanner Mirabel","Cahuella","Argent Reivich"], orbitScale:1.0 },
-  { id:"ararat", name:"Ararat (107 Piscium)", dist:24.3, x:9.6,y:8.8,z:13.2, color:"#ffe0a0", size_class:"medium",
+  { id:"ararat", name:"Ararat", dist:24.3, x:9.6,y:8.8,z:13.2, color:"#ffe0a0", size_class:"medium",
     lore:"An unremarkable star with a single ocean world — a Pattern Juggler planet. The refugees from Resurgam aboard the Nostalgia for Infinity hide here at the close of Redemption Ark. Clavain's final resting place; the Jugglers preserve him with Galiana and Felka.",
     people:["Nevil Clavain","Scorpio","Ana Khouri"], orbitScale:1.0 },
   { id:"lascaille_shroud", name:"Lascaille's Shroud", dist:14.0, x:-4.8,y:-9.2,z:11.6, color:"#b08aff", size_class:"shroud", posApprox:true,
@@ -423,6 +423,9 @@ const SYSTEMS = [
   { id:"bernsdottir_shroud", name:"Bernsdottir's Shroud", dist:16.5, x:-2.1,y:-11.4,z:9.0, color:"#9a78e8", size_class:"shroud", posApprox:true,
     lore:"The first Shroud ever detected, found by Bernsdottir in 2338 \u2014 a region of restructured spacetime like Lascaille's. The Shrouders are a faction of the Banished Amarantin who hid inside these bubbles to escape the Inhibitors; another faction instead retreated into Hades via Cerberus. Position approximate \u2014 the books give only the broad region.",
     people:[], orbitScale:1.0 },
+  { id:"piscium107", name:"107 Piscium", dist:24.4, x:14.2,y:-3.6,z:16.8, color:"#ffcf8a", size_class:"medium",
+    lore:"A K1 star ~24 ly from Sol. Quaiche, sent here by Queen Jasmina of the Gnostic Ascension in 2615, finds the gas giant Haldora and its moon Hela — and the alien bridge that founds a star-watching religion. The climax of Absolution Gap (2727).",
+    people:["Horris Quaiche","Rashmika Els","Grelier","Vasko Malinin"], orbitScale:1.0 },
 ];
 
 const PLANETS = [
@@ -464,6 +467,19 @@ const PLANETS = [
     facts:[
       "Setting of the early Conjoiner story 'Glacial'.",
       "An object lesson in colonies seeded by machine rather than by living crew."]},
+  { systemId:"piscium107", name:"Haldora", orbit:1.4, special:"gasgiant", gravity:2.5, gravityEst:true,
+    lore:"A gas giant orbiting 107 Piscium that periodically 'vanishes' for fractions of a second — the object of the Quaichist faith. In truth a camouflaged Shadows transport mechanism; when Brannigan fires a cache weapon into it, its shell is stripped away to reveal the machinery beneath.",
+    facts:[
+      "The 'vanishings' are glimpses of the device cloaking itself.",
+      "The Shadows — a race in a neighbouring brane — built it via the Scuttlers to cross into our universe.",
+      "Quaiche has his eyelids removed to never miss a vanishing."]},
+  { systemId:"piscium107", name:"Hela", orbit:1.0, special:"ice", gravity:0.3, gravityEst:true, moonOf:"Haldora",
+    lore:"An icy moon of Haldora, home to the long-extinct Scuttlers and to Quaiche's mobile Cathedrals that crawl along the equatorial 'Permanent Way' to keep Haldora in view. Spanned by the alien Way and the bridge over the Absolution Gap.",
+    bio:[{n:"Scuttlers (extinct)",apex:false,d:"Insectoid natives, shattered long ago; the Shadows once showed them how to build the crossing machine."}],
+    facts:[
+      "The Cathedrals move on tracks and legs, never stopping, to watch the sky.",
+      "Rashmika Els — secretly Aura — crosses Hela to reach the Permanent Way.",
+      "The bridge over the Absolution Gap gives the book its name."]},
   { systemId:"epsilon_eridani", name:"Conjoiner Mother Nest", orbit:1.55, special:"habitat", gravity:0.0, gravityEst:true,
     lore:"The hidden headquarters of the Conjoiners in the Epsilon Eridani system \u2014 the hive from which Skade's Closed Council operates. Where Galiana's Inhibitor-touched body is returned, and where Clavain is pressed to join the leadership before he defects.",
     facts:[
@@ -504,8 +520,10 @@ const ROUTES = [
     note:"Tanner follows Argent Reivich from Sky's Edge to plague-ruined Chasm City \u2014 a decades-long reefersleep voyage.", strike:true, startYear:2510, endYear:2517 },
   { from:"Epsilon Eridani", to:"Delta Pavonis", traveler:"The Weapons Chase (Clavain vs Skade)", dates:"c.2615 - 2633",
     note:"Clavain defects and races Skade's Conjoiner fleet to Resurgam to seize the hell-class cache weapons \u2014 an epic chase driven by inertia-suppression drives.", strike:true, startYear:2615, endYear:2633 },
-  { from:"Delta Pavonis", to:"Ararat (107 Piscium)", traveler:"Nostalgia for Infinity (evacuation)", dates:"c.2634 - 2640",
+  { from:"Delta Pavonis", to:"Ararat", traveler:"Nostalgia for Infinity (evacuation)", dates:"c.2634 - 2640",
     note:"Carrying ~160,000 Resurgam refugees, the Nostalgia for Infinity flees the Inhibitors to the hidden ocean world of Ararat.", maidenVoyage:true, startYear:2634, endYear:2640 },
+  { from:"Ararat", to:"107 Piscium", traveler:"Nostalgia for Infinity", dates:"c.2698 - 2727",
+    note:"As the Inhibitors destroy Ararat's star (Remontoire holds them off long enough to flee), the ship carries the survivors to Hela, drawn by Quaiche's plea for protection — and by Aura's knowledge.", strike:true, startYear:2698, endYear:2727 },
 ];
 
 // Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
@@ -586,6 +604,19 @@ const EVENTS = [
     text:"As the Inhibitors near the star, Volyova deploys the hell-class cache weapons to buy time; only a few thousand colonists have been lifted. Clavain's forces and the Infinity race to complete the evacuation." },
   { year:2634, system:"Delta Pavonis", title:"[Redemption Ark] Resurgam doomed; flight to Ararat",
     text:"The Inhibitors pierce Delta Pavonis and begin scouring Resurgam. The survivors flee aboard the Nostalgia for Infinity toward a hidden ocean world the refugees will call Ararat." },
+  // --- Absolution Gap (book 4; conclusion of the Inhibitor trilogy) ---
+  { year:2615, system:"107 Piscium", title:"[Absolution Gap] Quaiche finds Hela's bridge",
+    text:"Sent by Queen Jasmina to 107 Piscium, Quaiche surveys Haldora's moon Hela and discovers an alien bridge over a vast chasm. Attacked by its defences and crashing, he witnesses Haldora 'vanish' — and is reborn as a religious fanatic." },
+  { year:2675, system:"Ararat", title:"[Absolution Gap] Khouri returns to Ararat",
+    text:"After 23 years on Ararat, Clavain's refugee colony is reached by a capsule carrying Ana Khouri — and word that the Inhibitors and worse are coming. Clavain is drawn out of his grief-stricken seclusion." },
+  { year:2698, system:"Ararat", title:"[Absolution Gap] The flight from Ararat",
+    text:"The Inhibitors begin destroying Ararat's star; Remontoire's defences hold them off the planet just long enough for the Nostalgia for Infinity to lift the survivors and run for Hela." },
+  { year:2727, system:"107 Piscium", title:"[Absolution Gap] Rashmika crosses Hela",
+    text:"Rashmika Els — secretly the grown Aura — journeys across Hela to Quaiche's Permanent Way, seeking her brother and the truth of the Scuttlers and the vanishings." },
+  { year:2727, system:"107 Piscium", title:"[Absolution Gap] Haldora unmasked",
+    text:"The Nostalgia for Infinity reaches Hela. Quaiche takes hostages; Captain Brannigan fires a cache weapon into Haldora, stripping its shell to reveal the Shadows' transport machine. Quaiche and Grelier die; the cathedral soldiers destroy Brannigan." },
+  { year:2727, system:"107 Piscium", title:"[Absolution Gap] Aura rescued; the Shadows refused",
+    text:"Scorpio rescues Aura but, warned by a shard Remontoire matched between Ararat and Hela, refuses to free the Shadows' digital envoy from the scrimshaw suit. Humanity is left to face the Inhibitors without that bargain." },
 ];
 
 // Principal characters of Revelation Space & Chasm City, with a home/location anchor.
@@ -644,6 +675,16 @@ const CHARACTERS = [
     bio:"Accompanied Sylveste into Lascaille's Shroud, both altered with Pattern-Juggler transforms. Lost in the gravitational-flux catastrophe — and reborn, embittered and maimed, as the Mademoiselle who later hunts Sylveste through Khouri." },
   { group:"Shrouds & Backstory", name:"Bernsdottir", role:"Discoverer of the first Shroud", loc:"Bernsdottir's Shroud",
     bio:"Detected the first known Shroud in 2338, opening the field of Shrouder studies that the Sylveste Institute would pursue — the chain that eventually drew Lascaille, then Sylveste, into the Shrouders' trap." },
+  { group:"Absolution Gap", name:"Horris Quaiche", role:"Founder of the Quaichist church", loc:"107 Piscium",
+    bio:"A failed treasure-hunter who, after surviving Hela's alien bridge and witnessing Haldora's vanishings, is consumed by an indoctrinal virus. He has his eyelids removed and rides a perpetually-moving cathedral so he never misses a vanishing — building a planet-wide faith around the mystery." },
+  { group:"Absolution Gap", name:"Rashmika Els (Aura)", role:"Lie-reader · the grown Aura", loc:"107 Piscium",
+    bio:"A 17-year-old from Hela who can sense lies, drawn to the Scuttlers and the cathedrals — in truth the grown Aura, carrying the anti-Inhibitor knowledge gleaned from the Hades Matrix. Her journey across Hela brings the threads of the saga together." },
+  { group:"Absolution Gap", name:"Grelier", role:"Quaiche's surgeon-general", loc:"107 Piscium",
+    bio:"The sinister bloodletter of the Quaichist church, administering the indoctrinal virus via Quaiche's blood. Killed by Brannigan's hypometric weapon when he tries to hold Aura hostage." },
+  { group:"Absolution Gap", name:"Vasko Malinin", role:"Young Ararat soldier", loc:"Ararat",
+    bio:"A Security Arm recruit from the Ararat colony who rises to play a central role in the voyage to Hela and the final confrontation — one of the new generation born after Resurgam." },
+  { group:"Absolution Gap", name:"Queen Jasmina", role:"Ultra captain of the Gnostic Ascension", loc:"107 Piscium",
+    bio:"The sadomasochistic Ultra who sends Quaiche to 107 Piscium and seals his lover Morwenna in the scrimshaw suit to ensure his success \u2014 the cruelty that sets the whole Hela tragedy in motion." },
 ];
 </script>
 <script>
@@ -2566,7 +2607,7 @@ slider.addEventListener('input',e=>{
 });
 function stepYear(delta){
   if(playing){ playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
-  const min=parseInt(slider.min)||2080, max=parseInt(slider.max)||2700;
+  const min=parseInt(slider.min)||2080, max=parseInt(slider.max)||2740;
   const y=Math.min(max,Math.max(min,parseInt(slider.value)+delta));
   slider.value=y; setYearLabel(y); updateTimeline(y);
 }
@@ -2605,7 +2646,7 @@ playBtn.addEventListener('click',()=>{
   playing=!playing;
   playBtn.textContent=playing?'❚❚':'▶';
   playBtn.classList.toggle('on',playing);
-  if(playing && parseInt(slider.value)>=2700){ slider.value=2080; }
+  if(playing && parseInt(slider.value)>=2740){ slider.value=2080; }
 });
 
 /* ============================================================
@@ -2674,7 +2715,7 @@ function animate(){
     if(playAccum>=1){
       const step=Math.floor(playAccum); playAccum-=step;
       let y=parseInt(slider.value)+step;
-      if(y>=2700){ y=2700; playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
+      if(y>=2740){ y=2740; playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
       slider.value=y; setYearLabel(y); updateTimeline(y);
     }
   }
@@ -2935,7 +2976,7 @@ function drawVRPanel(title, body){
   // timeline bar
   const tlY=H-120, tlX=34, tlW=W-68;
   x.fillStyle='rgba(95,245,212,0.18)'; x.fillRect(tlX,tlY,tlW,12);
-  const yr=parseInt(slider.value), frac=(yr-2080)/(2700-2080);
+  const yr=parseInt(slider.value), frac=(yr-2080)/(2740-2080);
   x.fillStyle='#5ff5d4'; x.fillRect(tlX,tlY,tlW*frac,12);
   x.beginPath(); x.arc(tlX+tlW*frac,tlY+6,14,0,7); x.fill();
   x.fillStyle='#bfe9e2'; x.font='600 30px monospace';
@@ -3006,7 +3047,7 @@ function vrPanelClick(u,v){
   if(vrTimelineRect && u>=vrTimelineRect.x && u<=vrTimelineRect.x+vrTimelineRect.w &&
      v>=vrTimelineRect.y-0.03 && v<=vrTimelineRect.y+vrTimelineRect.h){
     const frac=(u-vrTimelineRect.x)/vrTimelineRect.w;
-    const yr=Math.round(2080+frac*(2700-2080));
+    const yr=Math.round(2080+frac*(2740-2080));
     slider.value=yr; setYearLabel(yr); updateTimeline(yr); redrawVRPanel();
   }
 }
@@ -3017,7 +3058,7 @@ function vrPanelDrag(u,v){
   if(u>=vrTimelineRect.x-0.02 && u<=vrTimelineRect.x+vrTimelineRect.w+0.02 &&
      v>=vrTimelineRect.y-0.06 && v<=vrTimelineRect.y+vrTimelineRect.h+0.04){
     const frac=THREE.MathUtils.clamp((u-vrTimelineRect.x)/vrTimelineRect.w,0,1);
-    const yr=Math.round(2080+frac*(2700-2080));
+    const yr=Math.round(2080+frac*(2740-2080));
     if(yr!==parseInt(slider.value)){ slider.value=yr; setYearLabel(yr); updateTimeline(yr); }
     redrawVRPanel();
   }
