@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bobiverse Starmap — Tactical Explorer</title>
+<style>
+:root{
+  --void:#030609;
+  --panel:rgba(7,14,21,.74);
+  --panel-solid:#081019;
+  --line:rgba(95,245,212,.22);
+  --line-faint:rgba(95,245,212,.10);
+  --ink:#d4e6e8;
+  --muted:#6f8893;
+  --accent:#5ff5d4;
+  --accent-soft:rgba(95,245,212,.12);
+  --amber:#ffc861;
+  --green:#7ee787;
+  --red:#ff4d6d;
+  --mono:"SF Mono","Cascadia Code","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --notch:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--void);font-family:var(--mono);color:var(--ink)}
+#app{position:absolute;inset:0;z-index:1}
+#app canvas{display:block;cursor:crosshair;touch-action:none}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea{-webkit-user-select:text;user-select:text}
+#app.grabbing canvas{cursor:grabbing}
+
+/* ===== shared tactical-glass panel ===== */
+.panel{
+  background:var(--panel);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid var(--line);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+.microcap{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+
+/* ===== star labels (projected) ===== */
+#labels{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.star-label{
+  position:absolute;transform:translate(-50%,8px);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(212,230,232,.75);text-shadow:0 0 6px rgba(0,0,0,.9);
+  white-space:nowrap;will-change:transform,opacity;
+}
+.star-label .tick{color:var(--accent);opacity:.6;margin-right:5px}
+
+/* ===== tooltip ===== */
+#tooltip{
+  position:fixed;z-index:60;pointer-events:none;display:none;
+  padding:5px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--panel-solid);border:1px solid var(--accent);color:var(--accent);
+  box-shadow:0 0 18px rgba(95,245,212,.25);
+}
+
+/* ===== header / brand + search ===== */
+#hud-top{position:fixed;top:18px;left:18px;z-index:50;width:312px}
+#brand{padding:12px 14px 11px;margin-bottom:8px}
+#brand h1{font-size:13px;font-weight:600;letter-spacing:.3em;color:var(--accent);text-transform:uppercase}
+#brand h1 .dim{color:var(--muted);font-weight:400}
+#brand p{margin-top:4px;font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+#search-wrap{position:relative}
+#search-input{
+  width:100%;padding:10px 12px 10px 34px;font:inherit;font-size:12px;letter-spacing:.06em;
+  background:var(--panel);border:1px solid var(--line);color:var(--ink);outline:none;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+  transition:border-color .2s, box-shadow .2s;
+}
+#search-input:focus{border-color:var(--accent);box-shadow:0 0 22px rgba(95,245,212,.18)}
+#search-input::placeholder{color:var(--muted)}
+#search-glyph{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+#search-results{
+  display:none;max-height:300px;overflow-y:auto;margin-top:6px;
+}
+#search-results.active{display:block}
+.result{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;
+  border-bottom:1px solid rgba(95,245,212,.08);font-size:12px;color:var(--ink);
+  transition:background .12s,padding-left .12s;
+}
+.result:last-child{border-bottom:none}
+.result:hover{background:var(--accent-soft);padding-left:16px}
+.result .kind{
+  flex:none;width:34px;text-align:center;font-size:9px;letter-spacing:.14em;padding:2px 0;
+  border:1px solid var(--line);color:var(--accent);
+}
+.result .kind.plt{color:var(--amber);border-color:rgba(255,200,97,.4)}
+.result .kind.bob{color:var(--green);border-color:rgba(126,231,135,.4)}
+.result .ctx{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.08em}
+.result.none{color:var(--muted);cursor:default}
+.result.none:hover{background:none;padding-left:12px}
+
+/* ===== timeline deck ===== */
+#deck{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;
+  display:flex;align-items:center;gap:14px;padding:12px 18px;
+}
+.deck-btn{
+  font:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--line);color:var(--accent);
+  padding:7px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.deck-btn:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(95,245,212,.25)}
+.deck-btn.on{background:var(--accent);color:#02100c;border-color:var(--accent)}
+#play-btn{width:34px;text-align:center;padding:7px 0}
+#year-readout{min-width:58px;text-align:center;font-size:16px;color:var(--accent);letter-spacing:.08em;text-shadow:0 0 12px rgba(95,245,212,.5)}
+#year-readout small{display:block;font-size:8px;letter-spacing:.26em;color:var(--muted);margin-top:1px}
+#slider-wrap{position:relative;width:300px;height:22px;display:flex;align-items:center}
+#ticks{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;padding:0 8px}
+#ticks span{width:1px;height:5px;background:rgba(95,245,212,.3)}
+#timeline-slider{
+  -webkit-appearance:none;appearance:none;width:100%;height:2px;background:rgba(95,245,212,.25);outline:none;
+}
+#timeline-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;background:var(--accent);
+  cursor:pointer;border:none;transform:rotate(45deg);
+  box-shadow:0 0 12px rgba(95,245,212,.7);
+}
+#timeline-slider::-moz-range-thumb{width:14px;height:14px;background:var(--accent);cursor:pointer;border:none;transform:rotate(45deg);box-shadow:0 0 12px rgba(95,245,212,.7)}
+
+/* ===== help button ===== */
+#help-btn{
+  position:fixed;bottom:18px;left:18px;z-index:50;width:42px;height:42px;
+  font:inherit;font-size:16px;color:var(--accent);cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+  transition:all .15s;
+}
+#help-btn:hover{border-color:var(--accent);box-shadow:0 0 18px rgba(95,245,212,.3)}
+
+/* ===== modal ===== */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;background:rgba(2,5,8,.78);
+  display:none;align-items:center;justify-content:center;padding:20px;
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.modal-overlay.active{display:flex}
+.modal{
+  width:min(480px,100%);background:var(--panel-solid);border:1px solid var(--accent);
+  clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));
+  box-shadow:0 0 60px rgba(95,245,212,.15);
+  animation:modal-in .25s ease;
+}
+@keyframes modal-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:12px;letter-spacing:.26em;color:var(--accent);text-transform:uppercase;font-weight:600}
+.x-btn{
+  font:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--line);color:var(--accent);padding:5px 12px;cursor:pointer;transition:all .15s;
+}
+.x-btn:hover{background:var(--accent);color:#02100c}
+.modal-body{padding:18px;font-size:12px;line-height:1.6}
+.modal-body .welcome{color:var(--ink);letter-spacing:.08em;margin-bottom:14px}
+.control-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 10px;margin-bottom:7px;border:1px solid rgba(95,245,212,.12);
+  background:rgba(95,245,212,.03);transition:all .15s;
+}
+.control-row:hover{border-color:var(--line);background:var(--accent-soft)}
+.hud-key{
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;
+  color:var(--accent);border:1px solid rgba(95,245,212,.5);background:rgba(95,245,212,.08);
+  padding:3px 9px;white-space:nowrap;text-shadow:0 0 8px rgba(95,245,212,.6);
+}
+.hud-action{color:var(--muted);font-size:11px;letter-spacing:.06em;text-align:right}
+.legend{margin-top:16px;padding-top:14px;border-top:1px dashed rgba(95,245,212,.18)}
+.legend-row{display:flex;align-items:center;gap:10px;margin-top:7px;font-size:11px;color:var(--muted)}
+.swatch{width:18px;height:0;border-top:2px dashed var(--accent);flex:none}
+.swatch.dot{width:9px;height:9px;border:none;border-radius:50%;margin:0 4.5px}
+.swatch.acid{background:#b6ff3c;box-shadow:0 0 8px #b6ff3c}
+.swatch.crimson{background:var(--red);box-shadow:0 0 8px var(--red)}
+.swatch.ring{width:9px;height:9px;border:1px solid var(--accent);border-radius:50%;background:transparent;margin:0 4.5px}
+
+/* ===== sidebar / telemetry drawer ===== */
+#sidebar{
+  position:fixed;top:0;right:0;z-index:100;width:348px;max-width:92vw;height:100vh;height:100dvh;
+  background:var(--panel);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-left:1px solid var(--line);box-shadow:-10px 0 50px rgba(0,0,0,.6);
+  transform:translateX(105%);transition:transform .32s cubic-bezier(.22,.9,.3,1);
+  display:flex;flex-direction:column;
+}
+#sidebar.active{transform:none}
+#sidebar::before{
+  content:"";position:absolute;left:-1px;top:0;width:2px;height:100%;
+  background:linear-gradient(180deg,transparent,var(--accent) 30%,var(--accent) 70%,transparent);opacity:.5;
+}
+.sb-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);flex:none}
+.sb-head h2{font-size:11px;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;font-weight:600}
+#sb-content{padding:18px;overflow-y:auto;flex:1;font-size:12px;line-height:1.6}
+#sb-content::-webkit-scrollbar{width:5px}
+#sb-content::-webkit-scrollbar-track{background:transparent}
+#sb-content::-webkit-scrollbar-thumb{background:rgba(95,245,212,.35)}
+#search-results::-webkit-scrollbar{width:5px}
+#search-results::-webkit-scrollbar-thumb{background:rgba(95,245,212,.35)}
+
+.sys-name{display:flex;align-items:center;gap:10px;font-size:17px;letter-spacing:.1em;color:var(--ink);font-weight:600;text-transform:uppercase}
+.sys-chip{width:10px;height:10px;flex:none;transform:rotate(45deg);box-shadow:0 0 12px currentColor}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+.stat{border:1px solid rgba(95,245,212,.14);padding:8px 10px;background:rgba(95,245,212,.03)}
+.stat b{display:block;font-size:14px;color:var(--accent);font-weight:600;letter-spacing:.04em}
+.stat span{font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.stat.wide{grid-column:1/-1}
+.stat.wide b{font-size:12px;color:var(--ink)}
+.lore{color:#9db4bc;border-top:1px dashed rgba(95,245,212,.18);padding-top:12px;margin-top:4px}
+.note-callout{margin-top:12px;padding:10px 12px;border-left:2px solid var(--amber);background:rgba(255,200,97,.06);color:#cfc3a4;font-size:11.5px}
+.note-callout b{color:var(--amber);letter-spacing:.08em}
+.sb-section{margin-top:20px;padding-top:14px;border-top:1px dashed rgba(95,245,212,.18)}
+.sb-section h4{font-size:10px;letter-spacing:.26em;color:var(--accent);text-transform:uppercase;margin-bottom:10px;font-weight:600}
+.sb-section ul{list-style:none}
+.sb-section li{padding:4px 0 4px 12px;border-left:2px solid rgba(95,245,212,.3);margin-bottom:5px;color:#aebfc6;font-size:11.5px}
+.sb-section li.planet-habitable{border-left-color:var(--green);color:#bfe5c3}
+.sb-section li.apex{border-left-color:var(--red);color:#f0b9c4}
+.sb-section li.apex::after{content:"APEX";float:right;font-size:8px;letter-spacing:.14em;color:var(--red);border:1px solid rgba(255,77,109,.5);padding:1px 5px;margin-left:8px}
+.sb-section li .bio-d{display:block;color:var(--muted);font-size:10px;margin-top:1px}
+.hazard-card{border:1px solid rgba(255,77,109,.22);border-left:3px solid var(--red);background:rgba(255,77,109,.05);padding:9px 11px;margin-bottom:8px;font-size:11.5px}
+.hazard-card .hz-name{color:#f6c0cb;font-weight:600;letter-spacing:.04em}
+.hazard-card .hz-d{display:block;color:#b89aa0;font-size:10.5px;margin-top:3px;line-height:1.5}
+.hz-badge{float:right;font-size:8px;letter-spacing:.14em;padding:2px 6px;text-transform:uppercase;border:1px solid currentColor;margin-left:8px}
+.hz-lethal{color:#ff4d6d}.hz-nuisance{color:var(--amber)}.hz-environmental{color:#7fb8ff}
+.sb-section h4.hz{color:var(--red)}
+.facts-list{list-style:none;margin-top:4px}
+.facts-list li{position:relative;padding:7px 0 7px 22px;border-bottom:1px dashed rgba(95,245,212,.12);color:#a9c6cc;font-size:11.5px;line-height:1.5}
+.facts-list li:last-child{border-bottom:none}
+.facts-list li::before{content:"\2737";position:absolute;left:2px;top:7px;color:var(--accent);font-size:10px;opacity:.7}
+.sb-section h4.facts{color:var(--amber)}
+.mission-card{
+  border:1px solid rgba(95,245,212,.12);border-left:3px solid var(--amber);
+  background:rgba(255,255,255,.02);padding:10px 12px;margin-bottom:10px;cursor:pointer;
+  transition:transform .15s,background .15s,border-color .15s;font-size:11.5px;
+}
+.mission-card:hover{transform:translateX(4px);background:rgba(95,245,212,.05);border-color:rgba(95,245,212,.3)}
+.mission-card.inbound{border-left-color:var(--green)}
+.tagrow{margin-bottom:6px}
+.tag{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.16em;padding:2px 6px;margin-right:5px;text-transform:uppercase}
+.tag-outbound{background:rgba(255,200,97,.15);color:var(--amber);border:1px solid rgba(255,200,97,.4)}
+.tag-inbound{background:rgba(126,231,135,.12);color:var(--green);border:1px solid rgba(126,231,135,.4)}
+.tag-discovery{background:rgba(255,77,109,.14);color:var(--red);border:1px solid rgba(255,77,109,.45)}
+.log-label{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-right:6px}
+.log-value{color:var(--ink)}
+.log-note{margin-top:6px;color:#7e919a;font-size:10.5px;line-height:1.5}
+.jump-hint{margin-top:6px;font-size:9px;letter-spacing:.18em;color:rgba(95,245,212,.45);text-transform:uppercase}
+
+#vr-btn{
+  position:fixed;z-index:120;top:18px;right:18px;
+  padding:10px 18px;font:600 11px/1 monospace;letter-spacing:.18em;color:#5ff5d4;
+  background:rgba(8,16,20,.82);border:1px solid rgba(95,245,212,.5);border-radius:3px;
+  cursor:pointer;backdrop-filter:blur(6px);display:none;
+}
+#vr-btn:hover{background:rgba(95,245,212,.12)}
+@media (max-width:720px){
+  #vr-btn{top:64px;right:18px}  /* below the help button on phones */
+  #hud-top{width:calc(100vw - 96px)}
+  #deck{width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center;gap:10px;padding:10px 12px;bottom:12px}
+  #slider-wrap{width:100%;order:5}
+  #sidebar{
+    top:auto;bottom:0;width:100vw;max-width:100vw;height:50vh;height:50dvh;
+    border-left:none;border-top:1px solid var(--line);
+    transform:translateY(105%);
+  }
+  #sidebar.active{transform:none}
+  #sidebar::before{left:0;top:-1px;width:100%;height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent) 30%,var(--accent) 70%,transparent)}
+  #help-btn{bottom:auto;top:18px;right:18px;left:auto}
+  .star-label{font-size:9px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="labels"></div>
+<div id="tooltip"></div>
+
+<div id="hud-top">
+  <div id="brand" class="panel">
+    <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
+    <p>Revelation Space · Book 1 · 2540–2567</p>
+  </div>
+  <div id="search-wrap">
+    <span id="search-glyph">⌖</span>
+    <input type="text" id="search-input" placeholder="Search systems, planets, or people…" autocomplete="off" />
+    <div id="search-results" class="panel"></div>
+  </div>
+</div>
+
+<div id="deck" class="panel">
+  <button id="play-btn" class="deck-btn" title="Play timeline">▶</button>
+  <div id="year-readout">2567<small>YEAR</small></div>
+  <div id="slider-wrap">
+    <div id="ticks"></div>
+    <input type="range" id="timeline-slider" min="2500" max="2580" value="2567" />
+  </div>
+  <button id="toggle-routes" class="deck-btn on">Routes</button>
+  <button id="toggle-grid" class="deck-btn on">Grid</button>
+</div>
+
+<button id="help-btn" title="Controls &amp; navigation">?</button>
+
+<div id="help-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Controls // Navigation</h2>
+      <button id="close-help" class="x-btn">Close [×]</button>
+    </div>
+    <div class="modal-body">
+      <p class="welcome">Welcome to the Revelation Space tactical starmap — the worlds of Alastair Reynolds’ first novel.</p>
+      <div class="control-row"><kbd class="hud-key">Drag</kbd><span class="hud-action">Rotate tactical matrix</span></div>
+      <div class="control-row"><kbd class="hud-key">Right-drag / 2-finger</kbd><span class="hud-action">Pan navigation grid</span></div>
+      <div class="control-row"><kbd class="hud-key">Scroll / pinch</kbd><span class="hud-action">Zoom optics</span></div>
+      <div class="control-row"><kbd class="hud-key">Click star</kbd><span class="hud-action">Open system telemetry</span></div>
+      <div class="legend">
+        <div class="microcap">Legend</div>
+        <div class="legend-row"><span class="swatch"></span>Lighthugger route (comets = traffic)</div>
+        <div class="legend-row"><span class="swatch dot acid"></span>Neutron star (Hades)</div>
+        <div class="legend-row"><span class="swatch dot crimson"></span>Lighthugger strike route</div>
+        <div class="legend-row"><span class="swatch ring"></span>Amarantin artefact (Cerberus)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside id="sidebar">
+  <div class="sb-head">
+    <h2>System Telemetry</h2>
+    <button id="close-sidebar" class="x-btn">Close</button>
+  </div>
+  <div id="sb-content"></div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+// Revelation Space — Book 1 data model. Coordinates are stylized (not true astrometry)
+// but distances/directions roughly track the canon where stars are real.
+const SYSTEMS = [
+  { id:"sol", name:"Sol", dist:0, x:0,y:0,z:0, color:"#ffd27f", size_class:"medium",
+    lore:"Humanity's origin. By the 26th century a depopulated backwater \u2014 the action has moved to the colony worlds.",
+    people:[], orbitScale:1.0 },
+  { id:"epsilon_eridani", name:"Epsilon Eridani", dist:10.5, x:-6.4,y:2.1,z:-7.9, color:"#ffb870", size_class:"medium",
+    lore:"K2 star, 10.5 ly from Sol. Home of Yellowstone and Chasm City \u2014 the pinnacle of human civilisation until the Melding Plague.",
+    people:["Ana Khouri","The Mademoiselle","Calvin Sylveste"], orbitScale:1.0 },
+  { id:"delta_pavonis", name:"Delta Pavonis", dist:19.9, x:7.2,y:-5.1,z:-17.4, color:"#fff2c4", size_class:"medium",
+    lore:"Sun-like star ~19.9 ly from Sol. Holds Resurgam \u2014 the dead homeworld of the Amarantin \u2014 and, ten light-hours out, its neutron-star twin Hades.",
+    people:["Dan Sylveste","Ilia Volyova","Triumvirate"], orbitScale:1.0 },
+  { id:"hades", name:"Hades", dist:19.9, x:8.9,y:-5.4,z:-18.1, color:"#bfe0ff", size_class:"neutron",
+    lore:"A neutron star ten light-hours from Delta Pavonis \u2014 in truth a vast Amarantin neutron-computer. Its single moon is the artificial world Cerberus.",
+    people:[], orbitScale:1.0 },
+  { id:"ross248", name:"Ross 248", dist:10.3, x:-9.1,y:3.8,z:1.2, color:"#ff8a6a", size_class:"small",
+    lore:"Red dwarf, ~10.3 ly. Holds Diadem, an early Conjoiner world \u2014 referenced as deep-space frontier.",
+    people:[], orbitScale:1.0 },
+  { id:"yellowstone_star", name:"p Eridani", dist:26.5, x:-11.2,y:5.4,z:-12.1, color:"#ffeedd", size_class:"medium",
+    lore:"Deep-space marker for the lighthugger routes radiating out of the Yellowstone hub.",
+    people:[], orbitScale:1.0 },
+];
+
+const PLANETS = [
+  // Epsilon Eridani / Yellowstone
+  { systemId:"epsilon_eridani", name:"Yellowstone", orbit:1.0, special:"yellowstone", gravity:1.0, gravityEst:true,
+    lore:"A cold, near-airless world whose orbital habitats \u2014 the Glitter Band of 10,000 city-states \u2014 made it the cultural capital of human space. The Melding Plague reduced the Band to the decaying 'Rust Belt' and Chasm City to a Gothic ruin.",
+    facts:[
+      "Chasm City sits over a gas vent that keeps the surface barely breathable.",
+      "The Glitter Band's 10,000 habitats made it humanity's most famous location.",
+      "The Melding Plague \u2014 a nanotech virus \u2014 perverts flesh and machine together; it gutted Yellowstone society.",
+      "Ana Khouri, an assassin stranded here, is hired by the Mademoiselle to kill Sylveste."]},
+  // Delta Pavonis / Resurgam
+  { systemId:"delta_pavonis", name:"Resurgam", orbit:1.2, special:"resurgam", gravity:0.9, gravityEst:true,
+    lore:"A cold, dust-storm-wracked desert world, former homeworld of the Amarantin. Dan Sylveste's colony excavates their 900,000-year-dead civilisation. The Amarantin reached spacefaring sophistication \u2014 then were annihilated in a single cataclysm.",
+    bio:[{n:"Amarantin (extinct)",apex:false,d:"Winged avian sentients, wiped out 900,000 years ago \u2014 later revealed as ancestors of the Shrouders."}],
+    hazards:[{n:"Ruinous dust storms",sev:"environmental",d:"Planet-wide storms that repeatedly shut down the excavations."}],
+    facts:[
+      "Sylveste discovers the Amarantin were far more advanced than anyone believed.",
+      "A buried, perfectly preserved Amarantin city and a colossal winged statue are unearthed.",
+      "The colony was planted in 2511 by the ship Lorean; the novel opens here in 2551.",
+      "In 2566 the Nostalgia for Infinity arrives and abducts Sylveste from the colony."]},
+  { systemId:"delta_pavonis", name:"Roc (gas giant)", orbit:2.3, special:"gasgiant", gravity:2.4, gravityEst:true,
+    lore:"A gas giant of the Delta Pavonis system. Generations later the Inhibitors harvest its rocky core to build the machine that turns the star into a flamethrower against Resurgam \u2014 but in Book 1 it still orbits intact."},
+  // Hades / Cerberus
+  { systemId:"hades", name:"Cerberus", orbit:0.7, special:"cerberus", gravity:1.1, gravityEst:true,
+    lore:"A small world orbiting the neutron star Hades \u2014 apparently rock, in truth an artificial Amarantin shell of nested defences hiding an Inhibitor beacon at its core. Sylveste's obsession draws the crew here in 2567.",
+    facts:[
+      "Cerberus is a Matrioshka of alien defences \u2014 'big dumb objects' stacked inside each other.",
+      "Sun Stealer, an ancient AI hiding in Sylveste's head, manipulates him into breaching it.",
+      "Reaching the core would alert the Inhibitors \u2014 and doom humanity.",
+      "Sylveste and Calvin are scanned into the Hades Matrix; Khouri is nearly crushed by the neutron star's gravity."]},
+];
+
+const ROUTES = [
+  { from:"Epsilon Eridani", to:"Delta Pavonis", traveler:"Nostalgia for Infinity", dates:"2546 - 2566",
+    note:"The lighthugger follows Sylveste to Resurgam to force a cure for its plague-stricken Captain.", maidenVoyage:true, startYear:2546, endYear:2566 },
+  { from:"Delta Pavonis", to:"Hades", traveler:"Nostalgia for Infinity", dates:"2567",
+    note:"Sylveste forces the crew to Cerberus/Hades to breach the Amarantin artefact.", strike:true, startYear:2567, endYear:2567 },
+  { from:"Sol", to:"Epsilon Eridani", traveler:"Colony ships", dates:"24th c.",
+    note:"Early settlement wave to Yellowstone, later perfected by the Demarchists.", maidenVoyage:true, startYear:2350, endYear:2350 },
+];
+</script>
+<script>
+/* ============================================================
+   Bobiverse Starmap — recreation of sgtriz/bobiverse-stars (MIT)
+   Single-file build · Three.js r128 · custom orbit controls
+   ============================================================ */
+(function(){
+'use strict';
+
+const SCALE = 8;
+const STAR_SIZES = { small:0.225, medium:0.50, large:1.45, supermassive:8.0 };
+
+/* ---- discovery years (first maiden-voyage arrival) ---- */
+const discoveryYears = { 'Sol': 0 };
+ROUTES.forEach(r=>{
+  if(r.maidenVoyage && r.to){
+    if(discoveryYears[r.to]===undefined || r.endYear < discoveryYears[r.to]) discoveryYears[r.to]=r.endYear;
+  }
+});
+
+/* ---- seeded random (deterministic nebulae) ---- */
+function seededRandom(seed){ return function(){ seed=Math.sin(seed)*10000; return seed-Math.floor(seed); }; }
+const srand = seededRandom(42);
+
+/* ---- helpers ---- */
+const byName = n => SYSTEMS.find(s=>s.name===n);
+const byId   = i => SYSTEMS.find(s=>s.id===i);
+const sysPos = s => new THREE.Vector3(s.x*SCALE, s.y*SCALE, s.z*SCALE);
+
+/* ---- scene ---- */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020409);
+scene.fog = new THREE.FogExp2(0x020409, 0.00018);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 60000);
+camera.position.set(10, 7, 16);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.xr.enabled = true;            // WebXR for Meta Quest / PC-VR
+const appEl = document.getElementById('app');
+appEl.appendChild(renderer.domElement);
+
+/* ============================================================
+   Custom orbit controls (r128 artifact builds lack OrbitControls)
+   ============================================================ */
+class OrbitRig {
+  constructor(cam, dom){
+    this.cam=cam; this.dom=dom;
+    this.target=new THREE.Vector3();
+    this.sph=new THREE.Spherical().setFromVector3(cam.position.clone().sub(this.target));
+    this.sphGoal=this.sph.clone();
+    this.panGoal=new THREE.Vector3();
+    this.enabled=true;
+    this.follow=null;           // Object3D to track (orbiting planets)
+    this.minR=0.4; this.maxR=24000;
+    this._bind();
+  }
+  _bind(){
+    const d=this.dom; const self=this;
+    let mode=null, lx=0, ly=0, pinch=0;
+    const touches={};
+    d.addEventListener('contextmenu',e=>e.preventDefault());
+    d.addEventListener('pointerdown',e=>{
+      if(!self.enabled) return;
+      touches[e.pointerId]={x:e.clientX,y:e.clientY};
+      const list=Object.values(touches), n=list.length;
+      if(e.pointerType==='touch'){
+        mode = n===1 ? 'rot' : 'panzoom';
+        if(n>=2){
+          pinch=Math.hypot(list[0].x-list[1].x,list[0].y-list[1].y);
+          lx=(list[0].x+list[1].x)/2; ly=(list[0].y+list[1].y)/2; // anchor on centroid, no jump
+        } else { lx=e.clientX; ly=e.clientY; }
+      } else {
+        mode = (e.button===2 || e.button===1) ? 'pan' : 'rot';
+        lx=e.clientX; ly=e.clientY;
+      }
+      appEl.classList.add('grabbing');
+      d.setPointerCapture(e.pointerId);
+      if(n===1){ self.moved=0; self.multi=false; } // a new gesture starts with the first finger
+      else self.multi=true; // pinches/pans never count as taps
+    });
+    d.addEventListener('pointermove',e=>{
+      if(!self.enabled || !mode) return;
+      if(touches[e.pointerId]) touches[e.pointerId]={x:e.clientX,y:e.clientY};
+      const list=Object.values(touches);
+      if(mode==='panzoom' && list.length>=2){
+        const cx=(list[0].x+list[1].x)/2, cy=(list[0].y+list[1].y)/2;
+        const np=Math.hypot(list[0].x-list[1].x, list[0].y-list[1].y);
+        if(pinch>4&&np>4) self.sphGoal.radius=THREE.MathUtils.clamp(self.sphGoal.radius*(pinch/np), self.minR, self.maxR);
+        pinch=np;
+        self._pan(cx-lx, cy-ly); lx=cx; ly=cy;
+        self.moved+=2;
+        return;
+      }
+      const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY;
+      self.moved+=Math.abs(dx)+Math.abs(dy);
+      if(mode==='rot'){
+        self.sphGoal.theta -= dx*0.005;
+        self.sphGoal.phi   = THREE.MathUtils.clamp(self.sphGoal.phi - dy*0.005, 0.05, Math.PI-0.05);
+      } else if(mode==='pan'){ self._pan(dx,dy); }
+    });
+    const up=e=>{
+      delete touches[e.pointerId];
+      const list=Object.values(touches);
+      if(list.length===0){ mode=null; appEl.classList.remove('grabbing'); }
+      else if(list.length===1 && e.pointerType==='touch'){
+        mode='rot'; lx=list[0].x; ly=list[0].y; pinch=0; // 2→1 fingers: re-anchor, no jump
+      }
+    };
+    d.addEventListener('pointerup',up); d.addEventListener('pointercancel',up);
+    d.addEventListener('wheel',e=>{
+      if(!self.enabled) return;
+      e.preventDefault();
+      const f=Math.pow(1.0011, e.deltaY);
+      self.sphGoal.radius=THREE.MathUtils.clamp(self.sphGoal.radius*f, self.minR, self.maxR);
+    },{passive:false});
+  }
+  _pan(dx,dy){
+    this.follow=null; // panning releases planet-follow
+    const r=this.sphGoal.radius;
+    const px=new THREE.Vector3().setFromMatrixColumn(this.cam.matrix,0);
+    const py=new THREE.Vector3().setFromMatrixColumn(this.cam.matrix,1);
+    const k=r*0.0014;
+    this.panGoal.addScaledVector(px,-dx*k).addScaledVector(py,dy*k);
+  }
+  update(){
+    if(this.follow){
+      if(!this.follow.parent) this.follow=null;       // object was cleared
+      else this.target.copy(this.follow.position);    // glue target to orbiting body
+    }
+    // damping toward goals
+    this.sph.radius += (this.sphGoal.radius-this.sph.radius)*0.12;
+    this.sph.theta  += (this.sphGoal.theta -this.sph.theta )*0.12;
+    this.sph.phi    += (this.sphGoal.phi   -this.sph.phi   )*0.12;
+    this.target.addScaledVector(this.panGoal,0.12);
+    this.panGoal.multiplyScalar(0.88);
+    const off=new THREE.Vector3().setFromSpherical(this.sph);
+    this.cam.position.copy(this.target).add(off);
+    this.cam.lookAt(this.target);
+  }
+  setView(targetPos, dist){
+    // keep current viewing direction, retarget + set distance (gsap-tweened)
+    const self=this;
+    self.follow=null;
+    self.enabled=false;
+    const goalT=targetPos.clone();
+    gsap.to(self.target,{x:goalT.x,y:goalT.y,z:goalT.z,duration:1.5,ease:'power2.inOut'});
+    gsap.to(self.sphGoal,{radius:dist,duration:1.5,ease:'power2.inOut',
+      onUpdate(){ self.sph.radius=self.sphGoal.radius; },
+      onComplete(){ self.enabled=true; }});
+  }
+}
+const rig = new OrbitRig(camera, renderer.domElement);
+
+/* ============================================================
+   Texture factories (procedural — no external assets)
+   ============================================================ */
+function radialTexture(stops, size=128){
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  const x=c.getContext('2d');
+  const g=x.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(([p,col])=>g.addColorStop(p,col));
+  x.fillStyle=g; x.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+const haloTex = radialTexture([[0,'rgba(255,255,255,1)'],[0.18,'rgba(255,255,255,.85)'],[0.42,'rgba(255,255,255,.22)'],[1,'rgba(255,255,255,0)']]);
+const cometTex = radialTexture([[0,'rgba(180,255,240,1)'],[0.4,'rgba(95,245,212,.55)'],[1,'rgba(95,245,212,0)']],64);
+const cometTexRed = radialTexture([[0,'rgba(255,210,200,1)'],[0.4,'rgba(255,77,109,.55)'],[1,'rgba(255,77,109,0)']],64);
+const dustTex  = radialTexture([[0,'rgba(255,255,255,.5)'],[1,'rgba(255,255,255,0)']],64);
+
+/* soft fbm-ish nebula blob */
+function nebulaTexture(seedFn){
+  const s=256, c=document.createElement('canvas'); c.width=c.height=s;
+  const x=c.getContext('2d');
+  x.globalCompositeOperation='lighter';
+  for(let i=0;i<46;i++){
+    const r=18+seedFn()*64;
+    const px=s*0.5+(seedFn()-0.5)*s*0.55;
+    const py=s*0.5+(seedFn()-0.5)*s*0.55;
+    const g=x.createRadialGradient(px,py,0,px,py,r);
+    const a=0.05+seedFn()*0.07;
+    g.addColorStop(0,`rgba(255,255,255,${a})`);
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=g; x.beginPath(); x.arc(px,py,r,0,7); x.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+/* ============================================================
+   Environment: starfield, dust, nebulae, tactical grid
+   ============================================================ */
+const nebTex = nebulaTexture(seededRandom(7));
+const NEB_COLORS = [0x1d4ed8, 0x0d9488, 0x7c2d6b]; // indigo / teal / ember-violet
+const nebulae=[];
+for(let i=0;i<14;i++){
+  const m=new THREE.SpriteMaterial({ map:nebTex, color:NEB_COLORS[i%3], transparent:true,
+    opacity:0.05+srand()*0.05, blending:THREE.AdditiveBlending, depthWrite:false });
+  const sp=new THREE.Sprite(m); sp.renderOrder=-2;
+  const dist=8000+srand()*8000, th=srand()*Math.PI*2, ph=Math.acos(2*srand()-1);
+  sp.position.set(dist*Math.sin(ph)*Math.cos(th), dist*Math.sin(ph)*Math.sin(th), dist*Math.cos(ph));
+  sp.scale.set(4200,4200,1); sp.material.rotation=srand()*Math.PI;
+  scene.add(sp); nebulae.push(sp);
+}
+
+/* background starfield */
+{
+  const N=16000, pos=new Float32Array(N*3), col=new Float32Array(N*3);
+  const tint=new THREE.Color();
+  for(let i=0;i<N;i++){
+    const d=(150+Math.random()*4000)*SCALE, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+    pos[i*3]=d*Math.sin(ph)*Math.cos(th); pos[i*3+1]=d*Math.sin(ph)*Math.sin(th); pos[i*3+2]=d*Math.cos(ph);
+    const t=Math.random();
+    tint.setHSL(t<0.7?0.58:(t<0.9?0.12:0.0), 0.25, 0.55+Math.random()*0.35);
+    col[i*3]=tint.r; col[i*3+1]=tint.g; col[i*3+2]=tint.b;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:0.9,vertexColors:true,transparent:true,opacity:0.8,sizeAttenuation:true})));
+}
+
+/* faint drifting dust */
+const dustMat=new THREE.SpriteMaterial({map:dustTex,color:0xaaccee,transparent:true,opacity:0.045,depthWrite:false});
+for(let i=0;i<300;i++){
+  const sp=new THREE.Sprite(dustMat);
+  sp.position.set((Math.random()-0.5)*2000*SCALE,(Math.random()-0.5)*2000*SCALE,(Math.random()-0.5)*2000*SCALE);
+  const sz=10+Math.random()*12; sp.scale.set(sz,sz,1); scene.add(sp);
+}
+
+/* tactical light-year grid centred on Sol — signature element */
+const gridGroup=new THREE.Group();
+{
+  const RINGS=[10,20,30,40,50]; // light-years
+  const lineMat=new THREE.LineBasicMaterial({color:0x5ff5d4,transparent:true,opacity:0.07});
+  RINGS.forEach(ly=>{
+    const r=ly*SCALE, pts=[];
+    for(let a=0;a<=128;a++){ const t=a/128*Math.PI*2; pts.push(new THREE.Vector3(r*Math.cos(t),0,r*Math.sin(t))); }
+    gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),lineMat));
+  });
+  // radial spokes
+  for(let a=0;a<12;a++){
+    const t=a/12*Math.PI*2, R=50*SCALE;
+    const pts=[new THREE.Vector3(Math.cos(t)*10*SCALE,0,Math.sin(t)*10*SCALE), new THREE.Vector3(Math.cos(t)*R,0,Math.sin(t)*R)];
+    gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),lineMat));
+  }
+  gridGroup.children.forEach(l=>l.raycast=()=>{});
+  scene.add(gridGroup);
+}
+
+/* ============================================================
+   Stars
+   ============================================================ */
+const starsGroup=new THREE.Group(); scene.add(starsGroup);
+const pickMeshes=[];            // invisible larger hit-spheres
+const starRecords=[];           // {system, group, core, halo, pick}
+const threatZones=[], shipyards=[];
+
+function makeDysonSwarm(starR){
+  // The Others' partial Dyson sphere: collector panels on a golden-spiral shell,
+  // with a missing wedge + scattered gaps so it reads as visibly unfinished.
+  const group=new THREE.Group();
+  const shellR=starR*2.6;
+  const panels=[];
+  const PANEL_COUNT=520;
+  const geo=new THREE.PlaneGeometry(starR*0.16, starR*0.16);
+  const matA=new THREE.MeshBasicMaterial({color:0x1b2630,side:THREE.DoubleSide,transparent:true,opacity:0.92});
+  const matB=new THREE.MeshBasicMaterial({color:0x2a3b44,side:THREE.DoubleSide,transparent:true,opacity:0.95});
+  const rnd=seededRandom(877);
+  for(let i=0;i<PANEL_COUNT;i++){
+    const t=i/PANEL_COUNT;
+    const phi=Math.acos(1-2*t);
+    const theta=Math.PI*(1+Math.sqrt(5))*i;
+    const az=((theta%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+    if((az>2.1 && az<4.0) || rnd()<0.12) continue;   // missing construction wedge + holes
+    const x=Math.sin(phi)*Math.cos(theta), y=Math.cos(phi), z=Math.sin(phi)*Math.sin(theta);
+    const m=new THREE.Mesh(geo, rnd()<0.5?matA:matB);
+    m.position.set(x*shellR,y*shellR,z*shellR);
+    m.lookAt(0,0,0);
+    m.raycast=()=>{};
+    group.add(m);
+    panels.push(m);
+  }
+  const shell=new THREE.Mesh(new THREE.SphereGeometry(shellR*1.01,24,24),
+    new THREE.MeshBasicMaterial({color:0x0a1016,transparent:true,opacity:0.12,side:THREE.BackSide,depthWrite:false}));
+  shell.raycast=()=>{}; group.add(shell);
+  const heat=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex,color:0xff7a3a,
+    transparent:true,opacity:0.35,blending:THREE.AdditiveBlending,depthWrite:false}));
+  heat.scale.setScalar(shellR*3); heat.raycast=()=>{}; group.add(heat);
+  group.visible=false;
+  return {group,panels,heat,shellR};
+}
+
+function makeThreatZone(type, starR){
+  const g=new THREE.Group(), R=starR*3.5;
+  const col = type==='brazilian' ? 0xb6ff3c : 0xff3355;
+  const glow=new THREE.Mesh(new THREE.SphereGeometry(R,6,6),
+    new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.03,blending:THREE.AdditiveBlending,depthWrite:false}));
+  const wire=new THREE.Mesh(new THREE.SphereGeometry(R*1.05,6,6),
+    new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:0.09,depthWrite:false}));
+  glow.raycast=()=>{}; wire.raycast=()=>{};
+  g.add(glow,wire); g.userData={glow,wire};
+  return g;
+}
+function makeInterstellarBH(r){
+  const group=new THREE.Group();
+  const diskInner=r*1.5, diskOuter=r*4.2;
+
+  function diskTexture(){
+    const w=512,h=128,c=document.createElement('canvas'); c.width=w; c.height=h;
+    const x=c.getContext('2d');
+    for(let i=0;i<w;i++){
+      const rad=i/w;
+      const heat=1-rad;
+      const rC=255, gC=Math.round(150+105*heat), bC=Math.round(60+120*heat*heat);
+      const a=Math.pow(1-Math.abs(rad-0.18)/0.82,1.4);
+      const col=x.createLinearGradient(0,0,0,h);
+      col.addColorStop(0,'rgba(0,0,0,0)');
+      col.addColorStop(0.5,'rgba('+rC+','+gC+','+bC+','+Math.max(0,a)+')');
+      col.addColorStop(1,'rgba(0,0,0,0)');
+      x.fillStyle=col; x.fillRect(i,0,1,h);
+    }
+    const rnd=seededRandom(1701);
+    x.globalCompositeOperation='overlay';
+    for(let k=0;k<140;k++){
+      const px=rnd()*w, pw=4+rnd()*40;
+      x.fillStyle='rgba(255,'+(200+rnd()*55|0)+',150,'+(0.05+rnd()*0.12)+')';
+      x.fillRect(px,0,pw,h);
+    }
+    const tex=new THREE.CanvasTexture(c);
+    tex.wrapS=THREE.RepeatWrapping;
+    return tex;
+  }
+  const diskTex=diskTexture();
+
+  const diskMat=new THREE.ShaderMaterial({
+    uniforms:{ tDisk:{value:diskTex}, uTime:{value:0} },
+    transparent:true, side:THREE.DoubleSide, depthWrite:false,
+    blending:THREE.AdditiveBlending,
+    vertexShader:[
+      'varying vec2 vUv; varying float vAng;',
+      'void main(){',
+      '  vUv=uv;',
+      '  vAng=atan(position.y,position.x);',
+      '  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);',
+      '}'].join('\n'),
+    fragmentShader:[
+      'uniform sampler2D tDisk; uniform float uTime; varying vec2 vUv; varying float vAng;',
+      'void main(){',
+      '  float rad=vUv.x;',
+      '  float spin=uTime*0.6;',
+      '  float u=fract(vAng/6.2831853 + spin);',
+      '  vec4 c=texture2D(tDisk, vec2(rad, u));',
+      '  float doppler=0.45+0.55*(0.5+0.5*sin(vAng+1.5708));',
+      '  c.rgb*=doppler*1.6;',
+      '  c.a*=smoothstep(0.0,0.08,rad)*smoothstep(1.0,0.85,rad);',
+      '  gl_FragColor=c;',
+      '}'].join('\n')
+  });
+  const diskGeo=new THREE.RingGeometry(diskInner,diskOuter,128,1);
+  const uv=diskGeo.attributes.uv, pos=diskGeo.attributes.position;
+  for(let i=0;i<uv.count;i++){
+    const px=pos.getX(i), py=pos.getY(i);
+    const rr=(Math.hypot(px,py)-diskInner)/(diskOuter-diskInner);
+    uv.setX(i, rr); uv.setY(i, 0.5);
+  }
+  uv.needsUpdate=true;
+  const disk=new THREE.Mesh(diskGeo,diskMat); disk.raycast=()=>{};
+  disk.rotation.x=Math.PI*0.5 - 0.32;
+  group.add(disk);
+
+  function lensArc(flip){
+    const arcGeo=new THREE.RingGeometry(r*1.08,r*1.5,96,1,0,Math.PI);
+    const m=new THREE.MeshBasicMaterial({map:diskTex,transparent:true,side:THREE.DoubleSide,
+      opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false});
+    const a=new THREE.Mesh(arcGeo,m); a.raycast=()=>{};
+    a.rotation.x=Math.PI/2;
+    if(flip) a.rotation.z=Math.PI;
+    return a;
+  }
+  const topArc=lensArc(false), botArc=lensArc(true);
+  group.add(topArc, botArc);
+
+  const photonRing=new THREE.Mesh(new THREE.TorusGeometry(r*1.06,r*0.025,16,128),
+    new THREE.MeshBasicMaterial({color:0xffe6b0,transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false}));
+  photonRing.raycast=()=>{};
+  group.add(photonRing);
+
+  const shadow=new THREE.Mesh(new THREE.SphereGeometry(r*1.02,32,32),
+    new THREE.MeshBasicMaterial({color:0x000000}));
+  shadow.raycast=()=>{}; group.add(shadow);
+
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex,color:0xffb870,
+    transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+  glow.scale.setScalar(r*9); glow.raycast=()=>{}; group.add(glow);
+
+  return {group,diskMat,photonRing,topArc,botArc,glow};
+}
+
+function makeShipyard(orbR){
+  const g=new THREE.Group(); g.rotation.x=Math.PI/6;
+  const scaffold=new THREE.Mesh(new THREE.TorusGeometry(orbR,0.04,8,64),
+    new THREE.MeshBasicMaterial({color:0x3a4a52,wireframe:true,transparent:true,opacity:0.75,depthWrite:false}));
+  scaffold.raycast=()=>{};
+  const pos=[];
+  for(let i=0;i<25;i++){
+    const a=i/25*Math.PI*2;
+    pos.push(orbR*Math.cos(a),(Math.random()-0.5)*0.02,orbR*Math.sin(a));
+  }
+  const pg=new THREE.BufferGeometry();
+  pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  const pts=new THREE.Points(pg,new THREE.PointsMaterial({color:0x5ff5d4,size:2,sizeAttenuation:false,transparent:true,opacity:0.9,depthWrite:false,blending:THREE.AdditiveBlending}));
+  pts.raycast=()=>{};
+  g.add(scaffold,pts);
+  return {group:g,points:pts};
+}
+
+SYSTEMS.forEach(sys=>{
+  const r=STAR_SIZES[sys.size_class]||0.35;
+  const group=new THREE.Group();
+  group.position.copy(sysPos(sys));
+
+  const isBlackHole = sys.size_class==='supermassive';
+  const coreColor = isBlackHole ? 0x000000 : 0xffffff;
+  const core=new THREE.Mesh(new THREE.SphereGeometry(r,20,20),
+    new THREE.MeshBasicMaterial({color:coreColor,transparent:true,opacity:1}));
+  core.raycast=()=>{};
+  if(!isBlackHole) core.material.color.set(sys.color).lerp(new THREE.Color(0xffffff),0.55);
+  group.add(core);
+
+  let blackHole=null;
+  if(isBlackHole){
+    blackHole=makeInterstellarBH(r);
+    group.add(blackHole.group);
+  } else {
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:haloTex,color:new THREE.Color(sys.color),transparent:true,
+      opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false}));
+    halo.scale.setScalar(r*7);
+    halo.raycast=()=>{};
+    group.add(halo);
+    group.userData.halo=halo;
+  }
+  const halo=group.userData.halo||{material:{color:new THREE.Color(0xffffff),opacity:0},scale:{setScalar(){}}};
+
+  const pick=new THREE.Mesh(new THREE.SphereGeometry(Math.max(r*2.2,1.1),8,8),
+    new THREE.MeshBasicMaterial({visible:false}));
+  pick.userData={systemId:sys.id};
+  group.add(pick); pickMeshes.push(pick);
+
+  if(sys.isSkunkWorks){
+    const y=makeShipyard(r+0.2); group.add(y.group); shipyards.push(y);
+  }
+  if(sys.threatLevel){
+    const z=makeThreatZone(sys.threatLevel,r); group.add(z); threatZones.push({zone:z,system:sys});
+  }
+  let dyson=null;
+  if(sys.dysonYear){
+    dyson=makeDysonSwarm(r); group.add(dyson.group);
+  }
+
+  starsGroup.add(group);
+  starRecords.push({system:sys,group,core,halo,pick,baseHalo:r*7,phase:Math.random()*6.28,
+    baseCore:core.material.color.getHex(),isNova:false,blackHole,dyson});
+});
+
+/* selection reticle — rotating dashed diamond ring */
+const reticle=(()=>{
+  const SZ=512, hc=SZ/2;                       // hi-res so it stays crisp up close
+  const c=document.createElement('canvas'); c.width=c.height=SZ;
+  const x=c.getContext('2d');
+  const s=SZ/128;                              // scale factor from the old 128px design
+  x.strokeStyle='rgba(95,245,212,0.95)'; x.lineWidth=3*s; x.setLineDash([10*s,8*s]);
+  x.lineCap='round';
+  x.beginPath(); x.arc(hc,hc,52*s,0,Math.PI*2); x.stroke();
+  x.setLineDash([]); x.lineWidth=2*s;
+  [[4,64],[64,4],[124,64],[64,124]].forEach(([px,py])=>{
+    const ax=px*s, ay=py*s;
+    x.beginPath(); x.moveTo(ax,ay);
+    x.lineTo(ax+(hc-ax)*0.18, ay+(hc-ay)*0.18); x.stroke();
+  });
+  const tex=new THREE.CanvasTexture(c);
+  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter; // smooth scaling
+  try{ tex.anisotropy=Math.min(8, renderer.capabilities.getMaxAnisotropy()); }catch(e){}
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,opacity:0,depthWrite:false,depthTest:false}));
+  sp.raycast=()=>{}; sp.renderOrder=5; scene.add(sp);
+  return sp;
+})();
+let reticleObj=null;
+
+/* fly to and follow any scene object (planets, megastructures) */
+let camProxyTween=null;
+let camLitObj=null; // body currently lit from camera view
+function killCamTweens(){
+  gsap.killTweensOf(rig.target);
+  gsap.killTweensOf(rig.sphGoal);
+  if(camProxyTween){ camProxyTween.kill(); camProxyTween=null; }
+  camLitObj=null;
+  rig.enabled=true; // killed tweens can't restore this themselves
+}
+function focusObject(obj, dist){
+  killCamTweens();
+  camLitObj=obj;
+  rig.follow=null;
+  rig.enabled=false;
+  const startT=rig.target.clone();
+  const proxy={t:0};
+  camProxyTween=gsap.to(proxy,{t:1,duration:1.3,ease:'power2.inOut',
+    onUpdate(){ rig.target.copy(startT).lerp(obj.position,proxy.t); }, // chases the moving body
+    onComplete(){ camProxyTween=null; rig.enabled=true; rig.follow=obj; }});
+  gsap.to(rig.sphGoal,{radius:dist,duration:1.3,ease:'power2.inOut',
+    onUpdate(){ rig.sph.radius=rig.sphGoal.radius; }});
+  reticleObj=obj;
+  const s=(obj.geometry&&obj.geometry.parameters&&obj.geometry.parameters.radius)
+    ? obj.geometry.parameters.radius*6 : dist*0.5;
+  reticle.scale.setScalar(Math.max(s,0.5));
+  gsap.to(reticle.material,{opacity:0.85,duration:0.5});
+}
+
+/* ============================================================
+   Routes: dashed trails + comets
+   ============================================================ */
+const trails=new THREE.Group(); scene.add(trails);
+const comets=[];
+ROUTES.forEach(route=>{
+  if(!route.maidenVoyage && !route.hostile && !route.strike) return;
+  const a=byName(route.from), b=byName(route.to);
+  if(!a||!b) return;
+  const start=sysPos(a), end=sysPos(b);
+  const line=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([start,end]),
+    new THREE.LineDashedMaterial({color:route.hostile?0xff3355:0x5ff5d4,
+      dashSize:0.6,gapSize:0.45,transparent:true,opacity:route.hostile?0.38:0.42}));
+  line.computeLineDistances();
+  line.userData={route};
+  line.raycast=()=>{};
+  trails.add(line);
+
+  const comet=new THREE.Sprite(new THREE.SpriteMaterial({map:route.hostile?cometTexRed:cometTex,transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false}));
+  comet.scale.set(0.7,0.7,1);
+  comet.userData={route,start:start.clone(),end:end.clone(),progress:0,speed:0.18+Math.random()*0.3,delay:Math.random()*2};
+  comet.raycast=()=>{};
+  comet.position.copy(start);
+  trails.add(comet); comets.push(comet);
+});
+
+/* ============================================================
+   Relativistic planetoids: Bill flung Epsilon Eridani I and a moon
+   of Epsilon Eridani III at GL 877 (depart 2225, nova impact 2257).
+   Icarus & Daedalus rode them in at >99% c.
+   ============================================================ */
+const planetoids=[];
+(function(){
+  const from=byName('Epsilon Eridani'), to=byName('Gliese 877');
+  if(!from||!to) return;
+  const start=sysPos(from), end=sysPos(to);
+  const DEPART=2225, IMPACT=2257;
+  const names=['Icarus','Daedalus'];
+  const dir=end.clone().sub(start);
+  const len=dir.length(); dir.normalize();
+  let side=new THREE.Vector3(0,1,0).cross(dir);
+  if(side.lengthSq()<0.01) side=new THREE.Vector3(1,0,0).cross(dir);
+  side.normalize();
+  const up=dir.clone().cross(side).normalize();
+  for(let k=0;k<2;k++){
+    const grp=new THREE.Group();
+    const body=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10),
+      new THREE.MeshBasicMaterial({color:0x9a8a7a}));
+    body.raycast=()=>{};
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:cometTex,color:0xbfe6ff,
+      transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false}));
+    glow.scale.setScalar(1.1); glow.raycast=()=>{};
+    grp.add(body,glow);
+    const tail=new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015,0.16,5,8,1,true),
+      new THREE.MeshBasicMaterial({color:0x7fd8ff,transparent:true,opacity:0.4,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    tail.raycast=()=>{};
+    grp.add(tail);
+    grp.visible=false;
+    scene.add(grp);
+    // two control points: bow out early, then swing to opposite sides of GL 877
+    // so the final approach vectors are nearly head-on from opposite hemispheres
+    const sign=k===0?1:-1, bow=len*0.30;
+    const ctrl1=start.clone().addScaledVector(dir,len*0.45)
+                  .addScaledVector(side,sign*bow)
+                  .addScaledVector(up,sign*bow*0.5);
+    // ctrl2 sits beyond the target on the opposite side, pulling the tail of the curve around
+    const ctrl2=end.clone().addScaledVector(side,sign*bow*1.6)
+                  .addScaledVector(up,-sign*bow*0.7)
+                  .addScaledVector(dir,len*0.12);
+    planetoids.push({grp,body,glow,tail,start:start.clone(),end:end.clone(),ctrl1,ctrl2,
+      depart:DEPART,impact:IMPACT,offset:k,name:names[k]});
+  }
+})();
+function bezier(a,c1,c2,b,t){ // cubic Bezier
+  const mt=1-t, mt2=mt*mt, t2=t*t;
+  return a.clone().multiplyScalar(mt2*mt)
+    .add(c1.clone().multiplyScalar(3*mt2*t))
+    .add(c2.clone().multiplyScalar(3*mt*t2))
+    .add(b.clone().multiplyScalar(t2*t));
+}
+
+/* ============================================================
+   Planets (spawned on focus) + Heaven's River megastructure
+   ============================================================ */
+const planetsGroup=new THREE.Group(); scene.add(planetsGroup);
+function clearPlanets(){
+  while(planetsGroup.children.length){
+    const c=planetsGroup.children[0];
+    planetsGroup.remove(c);
+    c.traverse(o=>{
+      if(o.geometry) o.geometry.dispose();
+      if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); }
+    });
+  }
+}
+
+/* ---- procedural planet surfaces ---- */
+scene.add(new THREE.AmbientLight(0x33424f, 1.05));
+/* camera fill light: only active while focused on a planet/megastructure,
+   so the hemisphere facing the viewer is always lit */
+const camLight=new THREE.DirectionalLight(0xdfeaf2, 0);
+const camLightTarget=new THREE.Object3D();
+scene.add(camLight, camLightTarget);
+camLight.target=camLightTarget;
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return (h>>>0)%9973+1; }
+function planetTexture(name, base, accent, opts={}){
+  const rnd=seededRandom(hashStr(name));
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle=base; x.fillRect(0,0,w,h);
+  if(opts.bands) for(let i=0;i<8;i++){
+    x.fillStyle=`rgba(255,255,255,${0.04+rnd()*0.08})`;
+    x.fillRect(0,rnd()*h,w,1.5+rnd()*6);
+  }
+  x.fillStyle=accent;
+  const blobs=opts.blobs||24;
+  for(let i=0;i<blobs;i++){
+    const bx=rnd()*w, by=h*0.12+rnd()*h*0.76, r=2+rnd()*9;
+    x.globalAlpha=0.45+rnd()*0.5;
+    x.beginPath(); x.ellipse(bx,by,r*1.7,r,rnd()*3,0,7); x.fill();
+    x.beginPath(); x.ellipse(bx-w,by,r*1.7,r,0,0,7); x.fill(); // horizontal wrap
+  }
+  x.globalAlpha=1;
+  if(opts.caps){
+    x.fillStyle='rgba(245,250,255,.9)';
+    for(let i=0;i<w;i+=3){ x.fillRect(i,0,2,3+rnd()*4); x.fillRect(i,h-3-rnd()*4,2,7); }
+  }
+  return new THREE.CanvasTexture(c);
+}
+function cloudTexture(seedName){
+  const rnd=seededRandom(hashStr(seedName)+77);
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  for(let i=0;i<60;i++){
+    const bx=rnd()*w, by=rnd()*h, r=2+rnd()*7;
+    x.fillStyle=`rgba(255,255,255,${0.10+rnd()*0.22})`;
+    x.beginPath(); x.ellipse(bx,by,r*2.2,r*0.7,0,0,7); x.fill();
+    x.beginPath(); x.ellipse(bx-w,by,r*2.2,r*0.7,0,0,7); x.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+/* ---- Ragnarök terraforming: surface as a function of timeline year ----
+   2144 (Bob's survey: barren rock, 3% O2) → 2330 (Bill's forest world)   */
+const RAG_T0=2144, RAG_T1=2330;
+const ragProgress=y=>THREE.MathUtils.clamp((y-RAG_T0)/(RAG_T1-RAG_T0),0,1);
+const RAG_BLOBS=(()=>{ // fixed continents so geography persists while colors change
+  const rnd=seededRandom(4242), a=[];
+  for(let i=0;i<34;i++) a.push({x:rnd()*128,y:64*0.12+rnd()*64*0.76,r:2+rnd()*9,rot:rnd()*3,al:0.45+rnd()*0.5});
+  return a;
+})();
+const lerpColor=(a,b,t)=>'#'+new THREE.Color(a).lerp(new THREE.Color(b),t).getHexString();
+function ragnarokTexture(t){
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  // basins: dry dust → deepening seas
+  x.fillStyle=lerpColor('#4a4036','#123a5c',t); x.fillRect(0,0,w,h);
+  // continents: bare regolith → forest green
+  x.fillStyle=lerpColor('#6e5f4e','#3f7a3c',t);
+  RAG_BLOBS.forEach(b=>{
+    x.globalAlpha=b.al;
+    x.beginPath(); x.ellipse(b.x,b.y,b.r*1.7,b.r,b.rot,0,7); x.fill();
+    x.beginPath(); x.ellipse(b.x-w,b.y,b.r*1.7,b.r,b.rot,0,7); x.fill();
+  });
+  // polar caps condense late, once there's enough water in the cycle
+  const cap=Math.max(0,(t-0.55)/0.45);
+  if(cap>0){
+    x.globalAlpha=cap*0.9; x.fillStyle='#f5faff';
+    const rnd=seededRandom(99);
+    for(let i=0;i<w;i+=3){ x.fillRect(i,0,2,3+rnd()*4); x.fillRect(i,h-3-rnd()*4,2,7); }
+  }
+  x.globalAlpha=1;
+  return new THREE.CanvasTexture(c);
+}
+function updateRagnarok(year){
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(!d||d.special!=='ragnarok') return;
+    const t=ragProgress(year), stage=Math.round(t*24);
+    if(stage===d.stage) return;
+    d.stage=stage;
+    const old=p.material.map;
+    p.material.map=ragnarokTexture(t);
+    p.material.needsUpdate=true;
+    if(old) old.dispose();
+    if(d.clouds) d.clouds.material.opacity=0.85*t;
+    if(d.atmo){
+      d.atmo.material.opacity=0.08+0.32*t;
+      d.atmo.material.color.set(lerpColor('#c9b698','#8fd8ff',t));
+    }
+  });
+}
+function ragStatus(y){
+  if(y<2150) return 'Barren rock · 3% O₂';
+  if(y<2240) return 'Terraforming · ice-asteroid bombardment';
+  if(y<2330) return 'Biosphere taking hold';
+  return 'Habitable · forested';
+}
+/* ---- KKP / Quilt: patchwork of divergent photosynthesis zones ---- */
+const QUILT_PALETTE=['#d94f4f','#e8a33d','#ded23a','#69c64f','#3fc6b0','#4f7fd9','#9a5fd0','#d05fae'];
+function quiltTexture(){
+  const rnd=seededRandom(777);
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#1d4a5e'; x.fillRect(0,0,w,h); // shallow seas between zones
+  for(let i=0;i<85;i++){
+    const bx=rnd()*w, by=h*0.06+rnd()*h*0.88, r=2.5+rnd()*7;
+    x.fillStyle=QUILT_PALETTE[Math.floor(rnd()*QUILT_PALETTE.length)];
+    x.globalAlpha=0.75+rnd()*0.25;
+    x.beginPath(); x.ellipse(bx,by,r*1.5,r,rnd()*3,0,7); x.fill();
+    x.beginPath(); x.ellipse(bx-w,by,r*1.5,r,rnd()*3,0,7); x.fill();
+  }
+  x.globalAlpha=1;
+  return new THREE.CanvasTexture(c);
+}
+/* ---- Poseidon: 800 km deep planetary ocean with floating plant mats ---- */
+const POS_MATS=(()=>{ // fixed mat positions, shared by surface + city lights
+  const rnd=seededRandom(1234), a=[];
+  for(let i=0;i<26;i++) a.push({x:rnd()*128,y:64*0.15+rnd()*64*0.7,r:1.4+rnd()*3,rot:rnd()*3});
+  return a;
+})();
+function poseidonTexture(){
+  const rnd=seededRandom(555);
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#0b3556'; x.fillRect(0,0,w,h);
+  // deep abyssal patches
+  x.fillStyle='#072540';
+  for(let i=0;i<18;i++){
+    x.globalAlpha=0.35+rnd()*0.3;
+    x.beginPath(); x.ellipse(rnd()*w,rnd()*h,6+rnd()*14,4+rnd()*8,rnd()*3,0,7); x.fill();
+  }
+  // surface currents (elongated lighter streaks)
+  for(let i=0;i<26;i++){
+    x.fillStyle=i%3?'#2c6f9e':'#3fa8c9';
+    x.globalAlpha=0.18+rnd()*0.22;
+    x.beginPath(); x.ellipse(rnd()*w,rnd()*h,8+rnd()*16,0.8+rnd()*1.6,0,0,7); x.fill();
+  }
+  // floating vegetation mats with darker rims
+  x.globalAlpha=1;
+  POS_MATS.forEach(m=>{
+    x.fillStyle='#2c5e38';
+    x.beginPath(); x.ellipse(m.x,m.y,m.r*1.25,m.r*0.85,m.rot,0,7); x.fill();
+    x.beginPath(); x.ellipse(m.x-w,m.y,m.r*1.25,m.r*0.85,m.rot,0,7); x.fill();
+    x.fillStyle='#48955a';
+    x.beginPath(); x.ellipse(m.x,m.y,m.r*0.95,m.r*0.6,m.rot,0,7); x.fill();
+    x.beginPath(); x.ellipse(m.x-w,m.y,m.r*0.95,m.r*0.6,m.rot,0,7); x.fill();
+  });
+  return new THREE.CanvasTexture(c);
+}
+function poseidonLightsTexture(){
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#000'; x.fillRect(0,0,w,h);
+  const rnd=seededRandom(888);
+  POS_MATS.forEach((m,i)=>{
+    if(i%2) return; // colonies on roughly half the mats
+    for(let k=0;k<3;k++){
+      x.fillStyle='#ffd9a0';
+      x.fillRect(m.x+(rnd()-0.5)*m.r*1.4, m.y+(rnd()-0.5)*m.r*0.8, 1.2, 1.2);
+    }
+  });
+  return new THREE.CanvasTexture(c);
+}
+function updatePoseidon(year){
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(!d||d.special!=='poseidon') return;
+    const settled=year>=2195;
+    if(settled===d.settled) return;
+    d.settled=settled;
+    p.material.emissive.set(settled?0xffb05a:0x000000); // night-side city lights
+  });
+}
+function newPavLightsTexture(){
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#000'; x.fillRect(0,0,w,h);
+  const rnd=seededRandom(2247);
+  // a handful of Pav settlements clustered on the land masses
+  for(let s=0;s<7;s++){
+    const cxp=rnd()*w, cyp=h*0.2+rnd()*h*0.6;
+    for(let k=0;k<6;k++){
+      x.fillStyle='#ffe0a8';
+      x.fillRect(cxp+(rnd()-0.5)*10, cyp+(rnd()-0.5)*8, 1.1, 1.1);
+    }
+  }
+  return new THREE.CanvasTexture(c);
+}
+function updateNewPav(year){
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(!d||d.special!=='newpav') return;
+    const settled=year>=2247;
+    if(settled===d.settled) return;
+    d.settled=settled;
+    p.material.emissive.set(settled?0xffb05a:0x000000); // Pav settlement lights
+  });
+}
+function updateEarth(year){
+  const st = year<2133?0 : year<2157?1 : year<2165?2 : 3;
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(!d||!d.isEarth) return;
+    if(st===d.earthState) return;
+    d.earthState=st;
+    const tex=earthStateTexture(st);
+    if(p.material.map) p.material.map.dispose();
+    p.material.map=tex; p.material.needsUpdate=true;
+    if(d.atmoMesh) d.atmoMesh.material.color.set(st===2?0xaab4bc:st===3?0xa8d4e0:st===1?0xc4a07a:0x8fd8ff);
+  });
+}
+function earthStatus(y){
+  if(y<2133) return 'Healthy \u2014 humanity\u2019s cradle';
+  if(y<2157) return 'System-wide war \u2014 nuclear strikes';
+  if(y<2165) return 'Nuclear winter \u2014 99.9% dead';
+  return 'Reclamation \u2014 ice age halted, 98% of species being restored';
+}
+function updateColony(year){
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(!d||d.special!=='colony') return;
+    const settled=year>=2185;
+    if(settled===d.settled) return;
+    d.settled=settled;
+    p.material.emissive.set(settled?0xffe0a8:0x000000); // human enclave lights
+  });
+}
+function colonyStatus(y){
+  if(y<2180) return 'Uninhabited habitable world';
+  if(y<2185) return 'Colony ships inbound';
+  return 'Human enclave colony';
+}
+function newPavStatus(y){
+  if(y<2240) return 'Uninhabited · catalogued by Steve';
+  if(y<2247) return 'Terraforming for the Pav';
+  return 'Pav colony · ~20,000 settled';
+}
+function poseidonStatus(y){
+  if(y<2170) return 'Uncharted ocean world';
+  if(y<2195) return 'Surveyed by Mulder · no colony';
+  return 'Mat colonies · suspended cities';
+}
+function earthStateTexture(state){
+  // state: 0 healthy, 1 at war (scorched), 2 nuclear winter (iced/grey), 3 reclamation (recovering, half ice-free)
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  const rnd=seededRandom(hashStr('Earth'));
+  x.fillStyle = state===2 ? '#2b3a48' : state===3 ? '#1f5070' : '#155a86';
+  x.fillRect(0,0,w,h);
+  const landBase = state===2 ? '#566658' : state===3 ? '#356a40' : state===1 ? '#3a6a38' : '#3a7a44';
+  x.fillStyle=landBase;
+  for(let i=0;i<24;i++){
+    const bx=rnd()*w, by=h*0.12+rnd()*h*0.76, br=2+rnd()*8;
+    x.beginPath(); x.ellipse(bx,by,br*1.5,br,rnd()*3,0,7); x.fill();
+    x.beginPath(); x.ellipse(bx-w,by,br*1.5,br,0,0,7); x.fill();
+  }
+  // polar caps — large in winter, receding (but still notable) during reclamation
+  const capH = state===2 ? h*0.22 : state===3 ? h*0.15 : h*0.10;
+  x.fillStyle = state===2 ? '#dce8ee' : state===3 ? '#e2eef4' : '#eef6fb';
+  x.fillRect(0,0,w,capH); x.fillRect(0,h-capH,w,capH);
+  if(state===2){
+    x.fillStyle='rgba(210,225,235,0.65)';
+    for(let i=0;i<40;i++){
+      const bx=rnd()*w, top=rnd()<0.5;
+      const by=top?capH+rnd()*h*0.28:h-capH-rnd()*h*0.28;
+      const br=2+rnd()*5;
+      x.beginPath(); x.ellipse(bx,by,br*1.4,br,0,0,7); x.fill();
+    }
+    x.fillStyle='rgba(120,124,130,0.35)'; x.fillRect(0,0,w,h);
+  }
+  if(state===3){
+    // reclamation: patchy ice retreat near the caps, regrowing green
+    x.fillStyle='rgba(200,218,228,0.4)';
+    for(let i=0;i<16;i++){
+      const bx=rnd()*w, top=rnd()<0.5;
+      const by=top?capH+rnd()*h*0.16:h-capH-rnd()*h*0.16;
+      const br=2+rnd()*4;
+      x.beginPath(); x.ellipse(bx,by,br*1.3,br,0,0,7); x.fill();
+    }
+    // fresh vegetation regrowing
+    x.fillStyle='rgba(90,170,90,0.45)';
+    for(let i=0;i<18;i++){
+      const bx=rnd()*w, by=h*0.22+rnd()*h*0.56, br=1.5+rnd()*4;
+      x.beginPath(); x.ellipse(bx,by,br*1.4,br*0.9,rnd()*3,0,7); x.fill();
+    }
+  }
+  if(state===1){
+    for(let i=0;i<14;i++){
+      const bx=rnd()*w, by=h*0.18+rnd()*h*0.64, br=1.5+rnd()*3.5;
+      x.fillStyle='rgba(20,12,8,0.7)';
+      x.beginPath(); x.ellipse(bx,by,br*1.5,br,0,0,7); x.fill();
+    }
+    for(let i=0;i<10;i++){
+      const bx=rnd()*w, by=h*0.2+rnd()*h*0.6, br=0.8+rnd()*1.6;
+      x.fillStyle='rgba(255,150,60,0.9)';
+      x.beginPath(); x.arc(bx,by,br,0,7); x.fill();
+    }
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+function quinTexture(){
+  const rnd=seededRandom(hashStr('Quin'));
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#232c34'; x.fillRect(0,0,w,h);          // dim, dusty oceans
+  x.fillStyle='#3a352c';                               // dark grey-brown dead land
+  for(let i=0;i<26;i++){
+    const bx=rnd()*w, by=h*0.12+rnd()*h*0.76, br=2+rnd()*9;
+    x.beginPath(); x.ellipse(bx,by,br*1.6,br,rnd()*3,0,7); x.fill();
+    x.beginPath(); x.ellipse(bx-w,by,br*1.6,br,0,0,7); x.fill();
+  }
+  // dried-blood reddish dead-vegetation patches
+  x.fillStyle='#4a2e26';
+  for(let i=0;i<12;i++){
+    const bx=rnd()*w, by=h*0.15+rnd()*h*0.7, br=1.5+rnd()*4;
+    x.beginPath(); x.ellipse(bx,by,br*1.4,br*0.8,rnd()*3,0,7); x.fill();
+  }
+  // scorched blast zones (solid dark ellipses, no gradient — renders the same everywhere)
+  for(let i=0;i<12;i++){
+    const bx=rnd()*w, by=rnd()*h, br=2+rnd()*5;
+    x.fillStyle='rgba(14,9,6,0.8)';
+    x.beginPath(); x.ellipse(bx,by,br*1.6,br*1.2,rnd()*3,0,7); x.fill();
+  }
+  for(let i=0;i<7;i++){
+    const bx=rnd()*w, by=rnd()*h, br=1.2+rnd()*2.2;
+    x.strokeStyle='rgba(150,130,105,0.4)'; x.lineWidth=0.7;
+    x.beginPath(); x.arc(bx,by,br,0,7); x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+/* ---- Old Pav: living world until the Others' harvest (~2210) ----
+   Same seeded geography in both states — it's the same planet, scoured. */
+const oldPavTexture=h=>h
+  ?planetTexture('Delta Pavonis 4','#45433d','#6b5a48',{blobs:30})
+  :planetTexture('Delta Pavonis 4','#1c4f6e','#6e9a3c',{blobs:30,caps:true});
+function updateOldPav(year){
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(!d||d.special!=='oldpav') return;
+    const harvested=year>=2210;
+    if(harvested===d.harvested) return;
+    d.harvested=harvested;
+    const old=p.material.map;
+    p.material.map=oldPavTexture(harvested);
+    p.material.needsUpdate=true;
+    if(old) old.dispose();
+    if(d.clouds) d.clouds.material.opacity=harvested?0.06:0.5;
+    if(d.atmo){
+      d.atmo.material.opacity=harvested?0.08:0.3;
+      d.atmo.material.color.set(harvested?'#8a7f70':'#9fd4b8');
+    }
+  });
+}
+function oldPavStatus(y){
+  if(y<2206) return 'Thriving Pav homeworld';
+  if(y<2210) return 'Contact · Jacques among the Pav';
+  return 'Scoured by the Others · exodus to New Pav';
+}
+/* ---- Book 5 worlds: Jabberwocky, Roanoke, PGF Capital ---- */
+function jabberwockyTexture(){
+  const t=planetTexture('Jabberwocky','#143246','#4a6b2f',{blobs:30,caps:false});
+  return t;
+}
+function jabberwockyCracks(){ // glowing eruption fissures (emissive)
+  const rnd=seededRandom(313);
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#000'; x.fillRect(0,0,w,h);
+  x.strokeStyle='#ff7a3a'; x.lineWidth=0.9;
+  for(let i=0;i<16;i++){ // jagged volcanic rifts
+    let px=rnd()*w, py=h*0.15+rnd()*h*0.7;
+    x.beginPath(); x.moveTo(px,py);
+    for(let k=0;k<6;k++){ px+=(rnd()-0.3)*9; py+=(rnd()-0.5)*7; x.lineTo(px,py); }
+    x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+function roanokeTexture(){
+  const rnd=seededRandom(hashStr('Roanoke'));
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#175a86'; x.fillRect(0,0,w,h);
+  x.fillStyle='#3a7a44';
+  for(let i=0;i<30;i++){ // greenbelt continents
+    const bx=rnd()*w, by=h*0.12+rnd()*h*0.76, br=2+rnd()*9;
+    x.globalAlpha=0.45+rnd()*0.5;
+    x.beginPath(); x.ellipse(bx,by,br*1.7,br,rnd()*3,0,7); x.fill();
+    x.beginPath(); x.ellipse(bx-w,by,br*1.7,br,0,0,7); x.fill();
+  }
+  x.globalAlpha=1;
+  x.fillStyle='rgba(245,250,255,.9)'; // caps
+  for(let i=0;i<w;i+=3){ x.fillRect(i,0,2,3+rnd()*4); x.fillRect(i,h-3-rnd()*4,2,7); }
+  // contour-hugging monorail lines, powered down but visible
+  const lr=seededRandom(414);
+  x.strokeStyle='rgba(225,240,230,.55)'; x.lineWidth=0.6;
+  for(let i=0;i<10;i++){
+    let px=lr()*w, py=10+lr()*44;
+    x.beginPath(); x.moveTo(px,py);
+    for(let k=0;k<5;k++){ px+=4+lr()*10; py+=(lr()-0.5)*5; x.lineTo(px,py); }
+    x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+function capitalTexture(){
+  const rnd=seededRandom(515);
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#33383f'; x.fillRect(0,0,w,h);
+  for(let i=0;i<140;i++){ // planet-wide built structure blocks
+    x.fillStyle=i%4?'#454c55':'#272b31';
+    x.globalAlpha=0.5+rnd()*0.5;
+    x.fillRect(rnd()*w, rnd()*h, 2+rnd()*8, 1.5+rnd()*4);
+  }
+  x.globalAlpha=1;
+  return new THREE.CanvasTexture(c);
+}
+function capitalGrid(){ // emissive: the archivist AMI's network still runs
+  const rnd=seededRandom(616);
+  const w=128,h=64,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle='#000'; x.fillRect(0,0,w,h);
+  x.strokeStyle='#39e8d8'; x.lineWidth=0.6;
+  for(let i=0;i<7;i++){ const y=6+rnd()*52; x.beginPath(); x.moveTo(0,y); x.lineTo(w,y); x.stroke(); }
+  for(let i=0;i<10;i++){ const px=rnd()*w; x.beginPath(); x.moveTo(px,4); x.lineTo(px+(rnd()-0.5)*16,h-4); x.stroke(); }
+  return new THREE.CanvasTexture(c);
+}
+/* [base, accent, atmosphere tint, options] */
+const PLANET_LOOKS=[
+  ['#6e5a43','#9c8a76','#b9a68a',{blobs:30}],
+  ['#1c4f86','#3f8ed0','#7fc4ff',{blobs:18}],
+  ['#a35d2a','#d99a4e','#e8b87a',{bands:true,blobs:14}],
+  ['#2e6b3a','#6fae57','#9fe0a8',{blobs:28}],
+  ['#4a3d77','#7d6ab8','#a995e8',{bands:true,blobs:16}],
+  ['#7a3d5e','#bd6f97','#e8a6c8',{blobs:20}]
+];
+// real Solar System bodies get astronomically-plausible looks [base, accent, atmosphere, opts]
+const SOLAR_LOOKS={
+  Mercury:['#6b6460','#8c837c','#9a8f86',{blobs:34}],          // grey cratered rock
+  Venus:  ['#c9a86a','#e6cf9a','#f0dca8',{bands:true,blobs:10}],// pale yellow sulfuric clouds
+  Mars:   ['#9c3b1b','#c46a3a','#d98a5a',{blobs:24,caps:true}],// rust red + polar caps
+  Jupiter:['#b08458','#d8b48a','#e8c89a',{bands:true,blobs:6}], // tan banded gas giant
+  Saturn: ['#c8a96f','#e3cb95','#f0dcab',{bands:true,blobs:5}], // pale gold bands
+  Uranus: ['#7fb8c4','#a8dbe4','#c4ecf2',{blobs:6}],            // pale cyan ice giant
+  Neptune:['#2a52a8','#3f74d0','#6f9ce8',{blobs:8}],            // deep blue ice giant
+};
+const PLANET_RINGS={Saturn:[1.5,2.6,'#e3cb95'],Uranus:[1.6,2.0,'#bfe6ee']}; // [inner,outer,color]×radius
+function spawnPlanets(sys, starPos){
+  const list=PLANETS.filter(p=>p.systemId===sys.id);
+  if(!list.length) return;
+  const scaleK=sys.orbitScale||1;
+  // orbits must clear the star body + glow (Omicron2 Eridani is r=1.45!)
+  const starR=STAR_SIZES[sys.size_class]||0.35;
+  const orbBase=starR*1.9;
+  const orbOf=o=>orbBase+o*scaleK*1.2;
+  // star-light so Lambert surfaces get a proper day/night side
+  const sun=new THREE.PointLight(0xfff0d6, 1.6, 0, 2);
+  sun.position.copy(starPos);
+  planetsGroup.add(sun);
+  const made={}; // planets by name, so moons can find their parent
+  const pairCenters={}; // barycenters for double planets (Vulcan–Romulus)
+  const PAIR_SEP=0.38;
+  function getPairCenter(key, orbit){
+    if(pairCenters[key]) return pairCenters[key];
+    const bc=new THREE.Object3D();
+    const bOrb=orbOf(orbit), bAng=Math.random()*Math.PI*2;
+    bc.userData={orbR:bOrb,ang:bAng,speed:0.1+Math.random()*0.15,spin:0,starPos:starPos.clone()};
+    bc.position.set(starPos.x+bOrb*Math.cos(bAng),starPos.y,starPos.z+bOrb*Math.sin(bAng));
+    planetsGroup.add(bc);
+    // shared orbit around the star
+    const ring=new THREE.Mesh(new THREE.RingGeometry(bOrb-0.008,bOrb+0.008,96),
+      new THREE.MeshBasicMaterial({color:0x9adfd2,side:THREE.DoubleSide,transparent:true,opacity:0.22}));
+    ring.rotation.x=Math.PI/2; ring.position.copy(starPos); ring.raycast=()=>{};
+    planetsGroup.add(ring);
+    // small mutual-orbit ring, tracking the barycenter
+    const mr=new THREE.Mesh(new THREE.RingGeometry(PAIR_SEP-0.006,PAIR_SEP+0.006,64),
+      new THREE.MeshBasicMaterial({color:0x9adfd2,side:THREE.DoubleSide,transparent:true,opacity:0.18}));
+    mr.rotation.x=Math.PI/2; mr.raycast=()=>{};
+    mr.userData={trackMesh:bc};
+    mr.position.copy(bc.position);
+    planetsGroup.add(mr);
+    pairCenters[key]={bc,count:0,baseAng:Math.random()*Math.PI*2};
+    return pairCenters[key];
+  }
+  list.forEach((p,idx)=>{
+    if(p.type) return; // megastructure handled below
+    const isRag=p.special==='ragnarok';
+    const isQuilt=p.special==='quilt';
+    const isPoseidon=p.special==='poseidon';
+    const isEden=p.special==='eden';
+    const isOldPav=p.special==='oldpav';
+    const isTwin=!!p.binaryPair;
+    const isJab=p.special==='jabberwocky';
+    const isRoanoke=p.special==='roanoke';
+    const isCapital=p.special==='pgfcapital';
+    const isNewHome=p.special==='newhome';
+    const isNewPav=p.special==='newpav';
+    const isValhalla=p.special==='valhalla';
+    const isTakama=p.special==='takama';
+    const isColony=isValhalla||isTakama;
+    const isQuin=p.special==='quin';
+    const isEL3=p.special==='el3';
+    const isOdin=p.special==='odin';
+    const isOthersWorld=p.special==='othersworld';
+    const isSuperEarth=p.special==='superearth';
+    const isResurgam=p.special==='resurgam';
+    const isYellowstone=p.special==='yellowstone';
+    const isCerberus=p.special==='cerberus';
+    const isRSgas=p.special==='gasgiant';
+    const isBarren=p.special==='barren'||p.special==='rocky';
+    const isIceGiant=p.special==='icegiant';
+    const isAsgard=/^Asgard/.test(p.name);
+    const isJovian=/jovian/i.test(p.name);
+    const isGiant=/^(Jupiter|Saturn|Uranus|Neptune)$/.test(p.name);
+    const giantR={Jupiter:0.17,Saturn:0.15,Uranus:0.12,Neptune:0.12}[p.name];
+    const isMoon=!!p.moonOf;
+    const r=isRag?0.16:isQuilt?0.11:isPoseidon?0.14:(isEden||isOldPav||isCapital||isNewHome||isNewPav||isColony||isQuin||isEL3||isOthersWorld||isSuperEarth)?0.13:isJab?0.14:(isTwin||isRoanoke)?0.12:isOdin?0.18:isIceGiant?0.15:isGiant?giantR:isJovian?0.15:isAsgard?0.07:isMoon?0.05+Math.random()*0.02:0.10+Math.random()*0.05;
+    const ragT=isRag?ragProgress(parseInt(slider.value)):0;
+    const pavHarvested=isOldPav&&parseInt(slider.value)>=2210;
+    let map, atmoColor, look;
+    if(isResurgam){
+      map=planetTexture(p.name,'#7a4a2e','#a86a3a',{blobs:30}); // rust-red dust desert
+      atmoColor='#caa07a';
+    } else if(isYellowstone){
+      map=planetTexture(p.name,'#3a4048','#5a6068',{blobs:26,caps:true}); // cold grey, thin air
+      atmoColor='#9aa8b4';
+    } else if(isCerberus){
+      map=planetTexture(p.name,'#1a1c22','#33363e',{blobs:14}); // dark artificial shell
+      atmoColor='#5a6068';
+    } else if(isRSgas){
+      map=planetTexture(p.name,'#9c7a4a','#c9a86a',{bands:true,blobs:8}); // banded gas giant (Roc)
+      atmoColor='#e0c490';
+    } else if(isRag){
+      map=ragnarokTexture(ragT);
+      atmoColor=lerpColor('#c9b698','#8fd8ff',ragT);
+    } else if(isQuilt){
+      map=quiltTexture();
+      atmoColor='#bfeaff';
+    } else if(isPoseidon){
+      map=poseidonTexture();
+      atmoColor='#74c7e8';
+    } else if(isEden){
+      map=planetTexture(p.name,'#155a86','#2e7a36',{blobs:32,caps:true});
+      atmoColor='#9fe0a8';
+    } else if(isOldPav){
+      map=oldPavTexture(pavHarvested);
+      atmoColor=pavHarvested?'#8a7f70':'#9fd4b8';
+    } else if(isJab){
+      map=jabberwockyTexture();
+      atmoColor='#c9a06a'; // ash haze
+    } else if(isNewHome){
+      map=planetTexture(p.name,'#1a5a8a','#2e8a48',{blobs:30,caps:true}); // blue-green marble
+      atmoColor='#aee0ff';
+    } else if(isNewPav){
+      map=planetTexture(p.name,'#1d5570','#5a8a3c',{blobs:28,caps:true}); // blue-green, slightly drier/olive
+      atmoColor='#a8dcc4';
+    } else if(isValhalla){
+      map=planetTexture(p.name,'#1a5278','#3a7a44',{blobs:30,caps:true}); // temperate blue-green
+      atmoColor='#a6d8f0';
+    } else if(isTakama){
+      map=planetTexture(p.name,'#236080','#4f8050',{blobs:26,caps:true}); // cooler outer-zone world
+      atmoColor='#bfe0e8';
+    } else if(isQuin){
+      map=quinTexture(); // war-scarred former homeworld
+      atmoColor='#9a8a7a';
+    } else if(isEL3){
+      map=planetTexture(p.name,'#1d5878','#3a7a4a',{blobs:28,caps:true}); // habitable green-blue
+      atmoColor='#a8dcec';
+    } else if(isOthersWorld){
+      map=planetTexture(p.name,'#5a4a30','#7d6a3a',{blobs:26}); // sickly contaminated brown-green, no caps
+      atmoColor='#b8a850'; // greenhouse haze
+    } else if(isSuperEarth){
+      map=planetTexture(p.name,'#1a5878','#3a8050',{blobs:30,caps:true}); // earthlike, lush
+      atmoColor='#a8e0d0';
+    } else if(isOdin){
+      map=planetTexture(p.name,'#9c6b4a','#d6a878',{bands:true,blobs:12}); // stormy banded Jovian
+      atmoColor='#e8c89a';
+    } else if(isIceGiant){
+      map=planetTexture(p.name,'#3a6a9a','#6f9cd0',{blobs:8}); // blue ice giant
+      atmoColor='#9fc4ea';
+    } else if(isBarren){
+      map=planetTexture(p.name,'#6b5d52','#8a7866',{blobs:30}); // grey-brown rock
+      atmoColor='#9a8d80';
+    } else if(isAsgard){
+      map=planetTexture(p.name,'#5a6a62','#7d8a6a',{blobs:18,caps:true}); // thin-atmosphere, muted green-grey
+      atmoColor='#b8c4b0';
+    } else if(isRoanoke){
+      map=roanokeTexture();
+      atmoColor='#9fe0c8';
+    } else if(isCapital){
+      map=capitalTexture();
+      atmoColor='#7fe8e0';
+    } else if(p.binaryPair){
+      // twin Earthlike worlds sharing one biosphere origin, subtly distinct
+      map=planetTexture(p.name,'#1a5580',p.name==='Vulcan'?'#3c7a3e':'#7a8a4a',{blobs:30,caps:true});
+      atmoColor='#a8d8e8';
+    } else if(p.name==='Earth'){
+      const yr0=parseInt(slider.value);
+      const st0 = yr0<2133?0 : yr0<2157?1 : yr0<2165?2 : 3;  // healthy → war → winter → reclamation
+      map=earthStateTexture(st0);
+      atmoColor = st0===2?'#aab4bc' : st0===3?'#a8d4e0' : st0===1?'#c4a07a' : '#8fd8ff';
+    } else if(SOLAR_LOOKS[p.name]){
+      look=SOLAR_LOOKS[p.name];
+      map=planetTexture(p.name,look[0],look[1],look[3]);
+      atmoColor=look[2];
+    } else {
+      look=isJovian?PLANET_LOOKS[2]:PLANET_LOOKS[idx%PLANET_LOOKS.length];
+      map=planetTexture(p.name,look[0],look[1],look[3]);
+      atmoColor=look[2];
+    }
+    const settled0=isPoseidon&&parseInt(slider.value)>=2195;
+    let emiMap=null, emiColor=0x000000;
+    if(isPoseidon){ emiMap=poseidonLightsTexture(); emiColor=settled0?0xffb05a:0x000000; }
+    if(isNewPav){ emiMap=newPavLightsTexture(); emiColor=parseInt(slider.value)>=2247?0xffb05a:0x000000; }
+    if(isColony){ emiMap=newPavLightsTexture(); emiColor=parseInt(slider.value)>=2185?0xffe0a8:0x000000; }
+    if(isJab){ emiMap=jabberwockyCracks(); emiColor=0xff5a2a; }      // eruption fissures
+    if(isCapital){ emiMap=capitalGrid(); emiColor=0x2bd8c8; }        // AMI network still live
+    const material=emiMap
+      ? new THREE.MeshPhongMaterial({map,
+          specular:isPoseidon?0x6fa6c9:0x111111, shininess:isPoseidon?26:6, // ocean glint only for Poseidon
+          emissiveMap:emiMap, emissive:new THREE.Color(emiColor)})
+      : new THREE.MeshLambertMaterial({map});
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,24,24),material);
+    let parent=p.moonOf?made[p.moonOf]:null;
+    let pairInfo=null;
+    if(p.binaryPair){
+      pairInfo=getPairCenter(p.binaryPair,p.orbit);
+      parent=pairInfo.bc;
+    }
+    const orbR=pairInfo?PAIR_SEP:parent?p.orbit:orbOf(p.orbit);
+    const ang=pairInfo?pairInfo.baseAng+pairInfo.count++*Math.PI:Math.random()*Math.PI*2;
+    mesh.userData={kind:'planet',orbR,ang,
+      speed:pairInfo?0.85:parent?0.5:0.1+Math.random()*0.2,
+      spin:0.25+Math.random()*0.4,starPos:starPos.clone(),name:p.name,lore:p.lore||null,
+      gravity:p.gravity,gravityEst:p.gravityEst,bio:p.bio||null,hazards:p.hazards||null,facts:p.facts||null,
+      consumedYear:p.consumedYear||null,novaConsumed:p.novaConsumed||false,
+      focusDist:Math.max(r*16,1.2)};
+    if(parent){
+      mesh.userData.parentMesh=parent;
+      mesh.userData.polar=isQuilt;           // KKP's orbit is tilted 90°
+      // small distinct inclination per moon so multiple moons don't lie perfectly coplanar
+      if(!isQuilt) mesh.userData.incl=(seededRandom(hashStr(p.name))()-0.5)*0.5; // ±~14°
+      mesh.position.set(parent.position.x+orbR,parent.position.y,parent.position.z);
+    } else {
+      mesh.position.set(starPos.x+orbR*Math.cos(ang),starPos.y,starPos.z+orbR*Math.sin(ang));
+    }
+    // axial tilt (degrees → rad): rings and spin axis follow from this
+    const AXIAL_TILT={Earth:23.4,Mars:25.2,Saturn:26.7,Neptune:28.3,Jupiter:3.1,Uranus:97.8};
+    if(isQuilt) mesh.rotation.z=Math.PI/2;   // KKP rolls on its side (~90°)
+    else if(AXIAL_TILT[p.name]!==undefined) mesh.rotation.z=AXIAL_TILT[p.name]*Math.PI/180;
+    // thin atmosphere rim
+    const atmoOp=isRag?0.08+0.32*ragT:isOldPav?(pavHarvested?0.08:0.3):isEden?0.26:isJab?0.34:isCapital?0.2:0.22;
+    const atmo=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex,
+      color:new THREE.Color(atmoColor),transparent:true,
+      opacity:atmoOp,blending:THREE.AdditiveBlending,depthWrite:false}));
+    atmo.scale.setScalar(r*(isRag?4.2:3.2));
+    atmo.raycast=()=>{};
+    mesh.add(atmo);
+    if(p.name==='Earth') mesh.userData.atmoMesh=atmo;
+    // cloud shells: Ragnarök condenses over time, Quilt light haze, Poseidon storm weather,
+    // Eden lush cover, Old Pav loses its weather after the harvest
+    if(isRag||isQuilt||isPoseidon||isEden||isOldPav||isTwin||isJab||isRoanoke||isCapital||isNewHome||isNewPav||isColony||isAsgard||isEL3||isQuin||isIceGiant||isOdin||isOthersWorld||isSuperEarth){
+      const clouds=new THREE.Mesh(new THREE.SphereGeometry(r*1.045,24,24),
+        new THREE.MeshLambertMaterial({map:cloudTexture(p.name),transparent:true,
+          opacity:isRag?0.85*ragT:isQuilt?0.45:isPoseidon?0.6:isEden?0.55:isTwin?0.5:isJab?0.7:isRoanoke?0.5:isCapital?0.15:isNewHome?0.6:isNewPav?0.5:isAsgard?0.2:isColony?0.55:isEL3?0.5:isQuin?0.2:isIceGiant?0.35:isOdin?0.45:isOthersWorld?0.55:isSuperEarth?0.5:(pavHarvested?0.06:0.5),
+          depthWrite:false}));
+      clouds.raycast=()=>{};
+      if(isJab) clouds.material.color=new THREE.Color(0x8f8a82); // ash-grey eruption smoke
+      mesh.add(clouds);
+      mesh.userData.clouds=clouds;
+      if(isRag){
+        mesh.userData.special='ragnarok';
+        mesh.userData.stage=Math.round(ragT*24);
+        mesh.userData.atmo=atmo;
+      }
+      if(isPoseidon){
+        mesh.userData.special='poseidon';
+        mesh.userData.settled=settled0;
+      }
+      if(isOldPav){
+        mesh.userData.special='oldpav';
+        mesh.userData.harvested=pavHarvested;
+        mesh.userData.atmo=atmo;
+      }
+      if(isJab) mesh.userData.special='jabberwocky';
+      if(isCapital) mesh.userData.special='pgfcapital';
+      if(isNewPav){
+        mesh.userData.special='newpav';
+        mesh.userData.settled=parseInt(slider.value)>=2247;
+      }
+      if(isColony){
+        mesh.userData.special='colony';
+        mesh.userData.settled=parseInt(slider.value)>=2185;
+      }
+    }
+    if(p.name==='Earth'){
+      mesh.userData.isEarth=true;
+      mesh.userData.earthState=(()=>{const y=parseInt(slider.value);return y<2133?0:y<2157?1:y<2165?2:3;})();
+    }
+    // finger-sized invisible hit target (raycast resolves back to the planet mesh)
+    const pickP=new THREE.Mesh(new THREE.SphereGeometry(Math.max(r*2.4,0.3),8,8),
+      new THREE.MeshBasicMaterial({visible:false}));
+    pickP.userData=mesh.userData;
+    mesh.add(pickP);
+    planetsGroup.add(mesh);
+    made[p.name]=mesh;
+    if(PLANET_RINGS[p.name]){
+      const [ri,ro,rc]=PLANET_RINGS[p.name];
+      const pr=new THREE.Mesh(new THREE.RingGeometry(r*ri,r*ro,64),
+        new THREE.MeshBasicMaterial({color:rc,side:THREE.DoubleSide,transparent:true,opacity:0.55,depthWrite:false}));
+      // RingGeometry lies in the local XY plane; rotate into the equatorial (XZ) plane.
+      // The planet mesh already carries the axial tilt, so the ring inherits it correctly.
+      pr.rotation.x=Math.PI/2;
+      pr.raycast=()=>{};
+      mesh.add(pr);
+      mesh.userData.ring=pr; // counter-spun each frame so it doesn't rotate with the surface
+    }
+    if(pairInfo){
+      // rings already created with the barycenter
+    } else if(parent){
+      // moon-orbit ring in the SAME plane the moon actually travels in
+      const mr=new THREE.Mesh(new THREE.RingGeometry(orbR-0.006,orbR+0.006,64),
+        new THREE.MeshBasicMaterial({color:0x9adfd2,side:THREE.DoubleSide,transparent:true,opacity:0.18}));
+      // RingGeometry defaults to the XY (vertical) plane. The moon orbits in XZ (horizontal)
+      // unless it's a polar orbit (Quilt), so rotate the ring to match the moon's plane.
+      if(!isQuilt){
+        // orbit normal for inclination `incl` is (0, -cos incl, sin incl) — a tilt about X.
+        // RingGeometry normal starts at +Z; rotate -(PI/2 - incl) about X to align them.
+        mr.rotation.x=Math.PI/2 - (mesh.userData.incl||0);
+      }
+      mr.raycast=()=>{};
+      mr.userData={trackMesh:parent};
+      mr.position.copy(parent.position);
+      planetsGroup.add(mr);
+    } else {
+      const ring=new THREE.Mesh(new THREE.RingGeometry(orbR-0.008,orbR+0.008,96),
+        new THREE.MeshBasicMaterial({color:0x9adfd2,side:THREE.DoubleSide,transparent:true,opacity:0.22}));
+      ring.rotation.x=Math.PI/2; ring.position.copy(starPos); ring.raycast=()=>{};
+      mesh.userData.orbitRing=ring;
+      planetsGroup.add(ring);
+    }
+  });
+  const mega=list.find(p=>p.type==='Topopolis');
+  if(mega){
+    const megaR=orbOf(mega.orbit);
+    const mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(megaR,0.07,140,16,2,3),
+      new THREE.MeshBasicMaterial({color:0x5ff5d4,wireframe:true,transparent:true,opacity:0.55}));
+    mesh.position.copy(starPos);
+    mesh.userData={kind:'mega',name:mega.name,type:mega.type,lore:mega.lore,towns:mega.towns,
+      focusDist:megaR*2.6};
+    planetsGroup.add(mesh);
+  }
+}
+
+/* ============================================================
+   Projected HTML star labels
+   ============================================================ */
+const labelLayer=document.getElementById('labels');
+const labelMap=new Map();
+SYSTEMS.forEach(s=>{
+  const el=document.createElement('div');
+  el.className='star-label';
+  el.innerHTML='<span class="tick">◆</span>'+s.name;
+  labelLayer.appendChild(el);
+  labelMap.set(s.id,el);
+});
+const _v=new THREE.Vector3();
+function updateLabels(){
+  const halfW=innerWidth/2, halfH=innerHeight/2;
+  starRecords.forEach(rec=>{
+    const el=labelMap.get(rec.system.id);
+    _v.copy(rec.group.position).project(camera);
+    const behind=_v.z>1;
+    const dist=camera.position.distanceTo(rec.group.position);
+    const dim=rec.core.material.opacity<0.5; // timeline-hidden
+    let op=0;
+    if(!behind && !dim){
+      op = dist<40 ? 0.95 : dist<420 ? 0.75 : dist<1400 ? 0.35 : 0;
+      if(rec.system.size_class==='supermassive') op=Math.max(op,0.6);
+    }
+    if(op<=0.01){ el.style.opacity=0; el.style.transform='translate(-9999px,-9999px)'; return; }
+    el.style.opacity=op;
+    const x=_v.x*halfW+halfW, y=-_v.y*halfH+halfH;
+    const pad=Math.max(10, 300/Math.max(dist,1));
+    el.style.transform=`translate(${x}px,${y+pad}px) translateX(-50%)`;
+  });
+}
+
+/* ============================================================
+   Sidebar / telemetry
+   ============================================================ */
+const sidebar=document.getElementById('sidebar');
+const sbContent=document.getElementById('sb-content');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function missionCard(route,currentName){
+  const out=route.from===currentName;
+  const tags=(route.hostile?'<span class="tag tag-discovery">Hostile</span>':'')+
+    (route.strike?'<span class="tag tag-discovery">Strike</span>':'')+
+    (!out&&route.maidenVoyage?'<span class="tag tag-discovery">Discovery</span>':'')+
+    (out?'<span class="tag tag-outbound">Outbound</span>':'<span class="tag tag-inbound">Inbound</span>');
+  const rows=out
+    ?`<div><span class="log-label">Name</span><span class="log-value">${esc(route.traveler)}</span></div>
+      <div><span class="log-label">Departed</span><span class="log-value">${route.startYear}</span></div>
+      <div><span class="log-label">Destination</span><span class="log-value">${esc(route.to)}</span></div>`
+    :`<div><span class="log-label">Name</span><span class="log-value">${esc(route.traveler)}</span></div>
+      <div><span class="log-label">Arrived</span><span class="log-value">${route.endYear}</span></div>
+      <div><span class="log-label">Origin</span><span class="log-value">${esc(route.from)}</span></div>`;
+  const note=route.note?`<div class="log-note">${esc(route.note)}</div>`:'';
+  const target=out?route.to:route.from;
+  return `<div class="mission-card ${out?'outbound':'inbound'}" data-target="${esc(target)}">
+    <div class="tagrow">${tags}</div>${rows}${note}
+    <div class="jump-hint">▸ Jump to ${esc(target)}</div></div>`;
+}
+
+const SYSTEM_NOTES={
+  'Sol':['Battle of Terra','April 2257: the Others’ fleet was destroyed here. Earth’s 15 million survivors had already shipped out aboard the captured ark Bellerophon.'],
+  'Epsilon Eridani':['Primary Skunk Works hub','Bill developed the Icarus and Daedalus probes here.'],
+  'Sagittarius A*':['Federation capital proximity','~7 light-years from the galactic center. Future wormhole tech was discovered here.'],
+  'Eta Leporis':['Timeline discrepancy','Bender arrived first but went missing; Bob One tracked his trail in 2331.']
+};
+
+function openSystem(sys){
+  const sysPlanets=PLANETS.filter(p=>p.systemId===sys.id&&!p.type);
+  const planetsHTML=sysPlanets.length?`
+    <div class="sb-section"><h4>Key planets</h4><ul>
+      ${sysPlanets.map(p=>{
+        const hab=/habitable/i.test(p.name)||(p.lore&&/habitable/i.test(p.lore));
+        return `<li class="${hab?'planet-habitable':''}">${esc(p.name)}${p.lore?' — '+esc(p.lore):''}</li>`;
+      }).join('')}
+    </ul></div>`:'';
+  const connected=ROUTES.filter(r=>r.from===sys.name||r.to===sys.name)
+    .sort((a,b)=>{
+      const ay=a.from===sys.name?a.startYear:a.endYear;
+      const by=b.from===sys.name?b.startYear:b.endYear;
+      return ay-by;
+    });
+  const logsHTML=connected.length?`
+    <div class="sb-section"><h4>Exploration logs</h4>
+      ${connected.map(r=>missionCard(r,sys.name)).join('')}</div>`:'';
+  const sysBio=[]; sysPlanets.forEach(p=>{ if(p.bio) p.bio.forEach(b=>sysBio.push(b)); });
+  // also pick up special worlds without a planet list entry shown above
+  PLANETS.filter(p=>p.systemId===sys.id&&p.bio).forEach(p=>p.bio.forEach(b=>{
+    if(!sysBio.includes(b)) sysBio.push(b);
+  }));
+  const bioSysHTML=bioSection(sysBio.filter((b,i,a)=>a.findIndex(x=>x.n===b.n)===i));
+  const sysHaz=[]; PLANETS.filter(p=>p.systemId===sys.id&&p.hazards).forEach(p=>p.hazards.forEach(z=>sysHaz.push(z)));
+  const hazSysHTML=hazardSection(sysHaz.filter((z,i,a)=>a.findIndex(x=>x.n===z.n)===i));
+  const sysFacts=[]; PLANETS.filter(p=>p.systemId===sys.id&&p.facts).forEach(p=>{
+    p.facts.forEach(f=>sysFacts.push(p.name==='Earth'?f:`${p.name}: ${f}`));
+  });
+  const factsSysHTML=factsSection(sysFacts);
+  const note=SYSTEM_NOTES[sys.name];
+  let noteHTML=note?`<div class="note-callout"><b>${esc(note[0])}:</b> ${esc(note[1])}</div>`:'';
+  if(sys.novaYear){
+    const yr=parseInt(slider.value), post=yr>=sys.novaYear;
+    let body;
+    if(post){
+      body='In 2257 relativistic planetoids detonated the star. Nothing remains, right out to the Oort cloud.';
+    } else if(sys.dysonYear && yr>=sys.dysonYear){
+      const pct=Math.min(100,Math.round((yr-sys.dysonYear)/(sys.novaYear-12-sys.dysonYear)*100));
+      body=`The Others are enclosing their star in a Dyson swarm — a partial shell of collector panels, roughly ${pct}% built, with a whole hemisphere still open.`;
+      if(yr>=2225) body+=` Two relativistic planetoids — flung from Epsilon Eridani in 2225 — are inbound at >99% c, carrying Icarus and Daedalus toward the 2257 nova strike.`;
+    } else {
+      body='The Others have claimed this system; megastructure construction has not yet begun.';
+    }
+    noteHTML+=`<div class="note-callout"><b>${post?'Nova remnant':'Dyson swarm'}:</b> ${body}</div>`;
+  }
+  const discovered=discoveryYears[sys.name];
+  const bobs=(sys.people||sys.bobs||[]).filter(b=>b!=='N/A');
+  sbContent.innerHTML=`
+    <div class="sys-name"><span class="sys-chip" style="background:${esc(sys.color)};color:${esc(sys.color)}"></span>${esc(sys.name)}</div>
+    <div class="stat-grid">
+      <div class="stat"><b>${sys.dist}</b><span>ly from Sol</span></div>
+      <div class="stat"><b>${esc(sys.size_class)}</b><span>star class</span></div>
+      <div class="stat wide"><b>${bobs.length?esc(bobs.join(', ')):'— none logged —'}</b><span>Bobs in system</span></div>
+      ${discovered!==undefined&&discovered>0?`<div class="stat wide"><b>${discovered}</b><span>first Bob arrival</span></div>`:''}
+    </div>
+    <p class="lore">${esc(sys.lore)}</p>
+    ${noteHTML}${planetsHTML}${bioSysHTML}${hazSysHTML}${factsSysHTML}${logsHTML}`;
+  sidebar.classList.add('active');
+}
+function bioHTML(d){
+  let out='';
+  if(d.gravity!==undefined){
+    out+=`<div class="stat"><b>${d.gravity.toFixed(2)} g${d.gravityEst?'*':''}</b><span>surface gravity</span></div>`;
+  }
+  return out;
+}
+function bioSection(bio){
+  if(!bio||!bio.length) return '';
+  return `<div class="sb-section"><h4>Native biology</h4><ul>${bio.map(b=>
+    `<li class="${b.apex?'apex':''}">${esc(b.n)}${b.d?`<span class="bio-d">${esc(b.d)}</span>`:''}</li>`).join('')}</ul></div>`;
+}
+function factsSection(facts){
+  if(!facts||!facts.length) return '';
+  return `<div class="sb-section"><h4 class="facts">Did you know?</h4><ul class="facts-list">${
+    facts.map(f=>`<li>${esc(f)}</li>`).join('')}</ul></div>`;
+}
+function hazardSection(haz){
+  if(!haz||!haz.length) return '';
+  return `<div class="sb-section"><h4 class="hz">Hazards &amp; pests</h4>${haz.map(z=>
+    `<div class="hazard-card"><span class="hz-badge hz-${z.sev}">${esc(z.sev)}</span>`+
+    `<span class="hz-name">${esc(z.n)}</span>`+
+    `${z.d?`<span class="hz-d">${esc(z.d)}</span>`:''}</div>`).join('')}</div>`;
+}
+function openPlanet(d){
+  const yr=parseInt(slider.value);
+  const status=d.special==='ragnarok'?ragStatus(yr)
+    :d.special==='poseidon'?poseidonStatus(yr)
+    :d.special==='newpav'?newPavStatus(yr)
+    :d.special==='colony'?colonyStatus(yr)
+    :d.isEarth?earthStatus(yr)
+    :d.special==='oldpav'?oldPavStatus(yr):null;
+  const statusRow=status
+    ?`<div class="stat wide"><b>${esc(status)}</b><span>status · year ${yr}</span></div>`
+    :'';
+  sbContent.innerHTML=`
+    <div class="sys-name"><span class="sys-chip" style="background:#9adfd2;color:#9adfd2"></span>${esc(d.name)}</div>
+    <div class="stat-grid"><div class="stat"><b>${d.orbR.toFixed(2)} u</b><span>orbit radius</span></div>${bioHTML(d)}${statusRow}</div>
+    ${d.lore?`<p class="lore">${esc(d.lore)}</p>`:''}
+    ${bioSection(d.bio)}
+    ${hazardSection(d.hazards)}
+    ${factsSection(d.facts)}
+    ${d.gravity!==undefined&&d.gravityEst?'<p class="jump-hint">* gravity estimated — not specified in the books</p>':''}`;
+  sidebar.classList.add('active');
+}
+function openMega(d){
+  sbContent.innerHTML=`
+    <div class="sys-name"><span class="sys-chip" style="background:#5ff5d4;color:#5ff5d4"></span>${esc(d.name)}</div>
+    <div class="stat-grid"><div class="stat wide"><b>${esc(d.type)}</b><span>megastructure class</span></div></div>
+    <p class="lore">${esc(d.lore)}</p>
+    <div class="sb-section"><h4>Towns in ${esc(d.name)}</h4>
+      <ul>${d.towns.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`;
+  sidebar.classList.add('active');
+}
+
+/* fly to system: camera flight + reticle + planets + telemetry */
+function flyToSystem(name){
+  const sys=byName(name); if(!sys) return;
+  const rec=starRecords.find(r=>r.system.id===sys.id); if(!rec) return;
+  clearPlanets();
+  spawnPlanets(sys,rec.group.position);
+  openSystem(sys);
+  killCamTweens();
+  reticleObj=rec.group;
+  const r=STAR_SIZES[sys.size_class]||0.35;
+  reticle.scale.setScalar(Math.max(r*5.5,2.4));
+  gsap.to(reticle.material,{opacity:0.85,duration:0.5});
+  // frame the whole system: star glow + outermost (offset) orbit
+  const sysPl=PLANETS.filter(p=>p.systemId===sys.id&&!p.moonOf);
+  const maxOrb=sysPl.length?Math.max(...sysPl.map(p=>p.orbit)):0;
+  const extent=r*1.9+maxOrb*(sys.orbitScale||1)*1.2;
+  const dist=Math.max(r*14, extent*2.1, 6);
+  rig.setView(rec.group.position,dist);
+}
+
+document.getElementById('close-sidebar').addEventListener('click',e=>{
+  e.stopPropagation();
+  sidebar.classList.remove('active'); // panel only — planets, focus, and reticle persist
+});
+sbContent.addEventListener('click',e=>{
+  const card=e.target.closest('.mission-card');
+  if(card) flyToSystem(card.dataset.target);
+});
+
+/* ============================================================
+   Picking: hover tooltip + click
+   ============================================================ */
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+const tooltip=document.getElementById('tooltip');
+let hoverName=null;
+
+function castAt(cx,cy){
+  pointer.x=(cx/innerWidth)*2-1;
+  pointer.y=-(cy/innerHeight)*2+1;
+  raycaster.setFromCamera(pointer,camera);
+  const pl=raycaster.intersectObjects(planetsGroup.children,true); // include hit-sphere children
+  if(pl.length){
+    let o=pl[0].object;
+    while(o.parent && o.parent!==planetsGroup) o=o.parent; // resolve to the actual planet mesh
+    if(o.userData && o.userData.kind) return {kind:o.userData.kind,obj:o};
+  }
+  const st=raycaster.intersectObjects(pickMeshes,false);
+  if(st.length) return {kind:'star',obj:st[0].object};
+  return null;
+}
+renderer.domElement.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch') return;
+  const hit=castAt(e.clientX,e.clientY);
+  let name=null;
+  if(hit){
+    if(hit.kind==='star') name=byId(hit.obj.userData.systemId)?.name;
+    else name=hit.obj.userData.name;
+  }
+  if(name){
+    tooltip.style.display='block';
+    tooltip.textContent=name;
+    tooltip.style.left=(e.clientX+14)+'px';
+    tooltip.style.top=(e.clientY+10)+'px';
+    renderer.domElement.style.cursor='pointer';
+  } else {
+    tooltip.style.display='none';
+    renderer.domElement.style.cursor='crosshair';
+  }
+  hoverName=name;
+});
+renderer.domElement.addEventListener('pointerleave',()=>{tooltip.style.display='none';});
+
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(e.pointerType==='mouse' && e.button!==0) return; // left button / any finger or pen
+  if(rig.moved>14 || rig.multi) return;               // drags and pinches are not taps
+  searchResults.classList.remove('active');
+  const hit=castAt(e.clientX,e.clientY);
+  if(!hit) return;
+  if(hit.kind==='star'){
+    const sys=byId(hit.obj.userData.systemId);
+    if(sys) flyToSystem(sys.name);
+  } else if(hit.kind==='mega'){
+    openMega(hit.obj.userData);
+    focusObject(hit.obj, hit.obj.userData.focusDist||4);
+  } else if(hit.kind==='planet'){
+    openPlanet(hit.obj.userData);
+    focusObject(hit.obj, hit.obj.userData.focusDist||1.5);
+  }
+});
+
+/* ============================================================
+   Search
+   ============================================================ */
+const searchWrap=document.getElementById('search-wrap');
+const searchInput=document.getElementById('search-input');
+const searchResults=document.getElementById('search-results');
+let searchTimer;
+
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function runSearch(q){
+  q=norm(q.trim());
+  if(!q){ searchResults.classList.remove('active'); searchResults.innerHTML=''; return; }
+  const out=[], seen=new Set();
+  const push=r=>{ const k=r.kind+'|'+r.sysName+'|'+r.label; if(!seen.has(k)){seen.add(k);out.push(r);} };
+  SYSTEMS.forEach(s=>{ if(norm(s.name).includes(q)) push({kind:'sys',label:s.name,sysName:s.name,ctx:s.dist+' ly'}); });
+  PLANETS.forEach(p=>{
+    if(norm(p.name).includes(q)){
+      const s=byId(p.systemId);
+      if(s) push({kind:'plt',label:p.name,sysName:s.name,ctx:s.name});
+    }
+  });
+  const travelers=new Map();
+  ROUTES.forEach(r=>{
+    if(norm(r.traveler).includes(q)){
+      if(!travelers.has(r.traveler)) travelers.set(r.traveler,new Set());
+      travelers.get(r.traveler).add(r.from); travelers.get(r.traveler).add(r.to);
+    }
+  });
+  travelers.forEach((sysNames,trav)=>{
+    sysNames.forEach(n=>{ if(byName(n)) push({kind:'bob',label:trav,sysName:n,ctx:n}); });
+  });
+  searchResults.innerHTML = out.length
+    ? out.map(r=>`<div class="result" data-sys="${esc(r.sysName)}">
+        <span class="kind ${r.kind}">${r.kind.toUpperCase()}</span>
+        <span>${esc(r.label)}</span><span class="ctx">${esc(r.ctx)}</span></div>`).join('')
+    : '<div class="result none">No telemetry match</div>';
+  searchResults.classList.add('active');
+}
+searchInput.addEventListener('input',e=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>runSearch(e.target.value),180);
+});
+searchResults.addEventListener('click',e=>{
+  const item=e.target.closest('.result[data-sys]');
+  if(!item) return;
+  flyToSystem(item.dataset.sys);
+  searchInput.value=''; searchResults.classList.remove('active'); searchResults.innerHTML='';
+});
+document.addEventListener('click',e=>{
+  if(!searchWrap.contains(e.target)) searchResults.classList.remove('active');
+});
+
+/* ============================================================
+   Timeline + toggles + autoplay
+   ============================================================ */
+let routesVisible=true, gridVisible=true, playing=false;
+const slider=document.getElementById('timeline-slider');
+const yearReadout=document.getElementById('year-readout');
+const playBtn=document.getElementById('play-btn');
+const routesBtn=document.getElementById('toggle-routes');
+const gridBtn=document.getElementById('toggle-grid');
+const ticksEl=document.getElementById('ticks');
+for(let i=0;i<=12;i++) ticksEl.appendChild(document.createElement('span'));
+
+function setYearLabel(y){ yearReadout.innerHTML=y+'<small>YEAR</small>'; }
+
+function updateTimeline(year){
+  starRecords.forEach(rec=>{
+    const dY=discoveryYears[rec.system.name];
+    const hidden = dY!==undefined && dY>year;
+    const targetCore = hidden?0.12:1.0;
+    const targetHalo = hidden?0.06:0.85;
+    if(Math.abs(rec.core.material.opacity-targetCore)>0.01){
+      gsap.to(rec.core.material,{opacity:targetCore,duration:0.45});
+      gsap.to(rec.halo.material,{opacity:targetHalo,duration:0.45});
+    }
+  });
+  threatZones.forEach(({zone,system})=>{
+    const dY=discoveryYears[system.name];
+    const othersGone=system.threatLevel==='others'&&year>=2257; // the nova ends the Others
+    zone.visible=!(dY!==undefined&&dY>year)&&!othersGone;
+  });
+  // nova events (GL 877, 2257)
+  starRecords.forEach(rec=>{
+    if(!rec.system.novaYear) return;
+    const nova=year>=rec.system.novaYear;
+    if(nova===rec.isNova) return;
+    rec.isNova=nova;
+    rec.halo.material.color.set(nova?0xfff3e0:rec.system.color);
+    rec.core.material.color.setHex(nova?0x111111:rec.baseCore);
+  });
+  // Others' partial Dyson sphere: appears at dysonYear, fills in over decades, gone after the nova
+  starRecords.forEach(rec=>{
+    if(!rec.dyson) return;
+    const dy=rec.system.dysonYear, nv=rec.system.novaYear||9999;
+    const building = year>=dy && year<nv;
+    rec.dyson.group.visible=building;
+    if(building){
+      const prog=THREE.MathUtils.clamp((year-dy)/(nv-12-dy),0,1); // ~full a bit before the nova
+      const shown=Math.floor(rec.dyson.panels.length*prog);
+      rec.dyson.panels.forEach((m,i)=>{ m.visible=i<shown; });
+      rec.dyson.heat.material.opacity=0.15+0.3*prog; // waste heat grows as collectors multiply
+    }
+  });
+  trails.children.forEach(child=>{
+    const route=child.userData&&child.userData.route;
+    if(!route) return;
+    child.visible = routesVisible && route.startYear<=year;
+  });
+  updateRagnarok(year);
+  updatePoseidon(year);
+  updateNewPav(year);
+  updateColony(year);
+  updateEarth(year);
+  updateOldPav(year);
+  // bodies Bill flung at GL 877 vanish from their home system after 2225
+  planetsGroup.children.forEach(p=>{
+    const cy=p.userData&&p.userData.consumedYear;
+    if(cy){ const gone=year>=cy; p.visible=!gone; if(p.userData.orbitRing) p.userData.orbitRing.visible=!gone; }
+    // GL 877's own planets are annihilated by the 2257 nova
+    if(p.userData&&p.userData.novaConsumed){ const gone=year>=2257; p.visible=!gone; if(p.userData.orbitRing) p.userData.orbitRing.visible=!gone; }
+  });
+}
+slider.addEventListener('input',e=>{
+  const y=parseInt(e.target.value);
+  setYearLabel(y); updateTimeline(y);
+});
+routesBtn.addEventListener('click',()=>{
+  routesVisible=!routesVisible;
+  routesBtn.classList.toggle('on',routesVisible);
+  updateTimeline(parseInt(slider.value));
+});
+gridBtn.addEventListener('click',()=>{
+  gridVisible=!gridVisible;
+  gridBtn.classList.toggle('on',gridVisible);
+  gridGroup.visible=gridVisible;
+});
+playBtn.addEventListener('click',()=>{
+  playing=!playing;
+  playBtn.textContent=playing?'❚❚':'▶';
+  playBtn.classList.toggle('on',playing);
+  if(playing && parseInt(slider.value)>=2580){ slider.value=2500; }
+});
+
+/* ============================================================
+   Help modal
+   ============================================================ */
+const helpModal=document.getElementById('help-modal');
+document.getElementById('help-btn').addEventListener('click',()=>helpModal.classList.add('active'));
+document.getElementById('close-help').addEventListener('click',()=>helpModal.classList.remove('active'));
+helpModal.addEventListener('click',e=>{ if(e.target===helpModal) helpModal.classList.remove('active'); });
+window.addEventListener('load',()=>helpModal.classList.add('active'));
+
+/* ============================================================
+   Resize + animation loop
+   ============================================================ */
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+const clock=new THREE.Clock();
+let playAccum=0;
+let sheetShift=0; // keeps the focused system above the mobile bottom sheet
+function animate(){
+  const dt=clock.getDelta();
+  const t=clock.getElapsedTime();
+  rig.update();
+
+  // shift the render centre upward while the bottom sheet covers the lower half
+  const wantShift=(innerWidth<=720 && sidebar.classList.contains('active'))?0.24:0;
+  sheetShift+=(wantShift-sheetShift)*0.1;
+  if(sheetShift>0.002){
+    camera.setViewOffset(innerWidth,innerHeight,0,innerHeight*sheetShift,innerWidth,innerHeight);
+  } else if(camera.view && camera.view.enabled){
+    camera.clearViewOffset();
+  }
+
+  // timeline autoplay (~24 years/sec)
+  if(playing){
+    playAccum+=dt*24;
+    if(playAccum>=1){
+      const step=Math.floor(playAccum); playAccum-=step;
+      let y=parseInt(slider.value)+step;
+      if(y>=2580){ y=2580; playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
+      slider.value=y; setYearLabel(y); updateTimeline(y);
+    }
+  }
+  const year=parseInt(slider.value);
+
+  // star twinkle
+  starRecords.forEach(rec=>{
+    if(rec.dyson && rec.dyson.group.visible) rec.dyson.group.rotation.y+=dt*0.04;
+    if(rec.blackHole){
+      rec.blackHole.diskMat.uniforms.uTime.value=t;
+      // billboard the photon ring + lensing arcs to face the camera
+      rec.blackHole.photonRing.lookAt(camera.position);
+      const q=camera.quaternion;
+      rec.blackHole.topArc.quaternion.copy(q);
+      rec.blackHole.botArc.quaternion.copy(q);
+      rec.blackHole.botArc.rotateZ(Math.PI);
+      return;
+    }
+    if(rec.core.material.opacity>0.5){
+      const k=1+Math.sin(t*1.6+rec.phase)*0.08;
+      rec.halo.scale.setScalar(rec.baseHalo*(rec.isNova?2.6:1)*k);
+    }
+  });
+
+  // selection reticle follows + spins
+  if(reticleObj){
+    if(!reticleObj.parent){ reticleObj=null; reticle.material.opacity=0; }
+    else{
+      reticle.position.copy(reticleObj.position);
+      reticle.material.rotation+=dt*0.6;
+    }
+  }
+
+  // camera fill light while focused on a body
+  if(camLitObj && !camProxyTween && !rig.follow) camLitObj=null; // released via pan etc.
+  const lightGoal=(camLitObj && camLitObj.parent)?0.8:0;
+  camLight.intensity+=(lightGoal-camLight.intensity)*0.07;
+  if(camLight.intensity>0.01 && camLitObj && camLitObj.parent){
+    camLight.position.copy(camera.position);
+    camLightTarget.position.copy(camLitObj.position);
+  }
+
+  // planet orbits + self-rotation (+ moons around moving parents)
+  planetsGroup.children.forEach(p=>{
+    const d=p.userData;
+    if(d&&d.trackMesh){ p.position.copy(d.trackMesh.position); return; } // moon-orbit ring
+    if(d&&d.orbR!==undefined){
+      d.ang+=d.speed*dt;
+      const cx=d.parentMesh?d.parentMesh.position:d.starPos;
+      if(d.polar) // KKP: orbit plane tilted 90°
+        p.position.set(cx.x+d.orbR*Math.cos(d.ang),cx.y+d.orbR*Math.sin(d.ang),cx.z);
+      else {
+        const incl=d.incl||0;
+        p.position.set(
+          cx.x+d.orbR*Math.cos(d.ang),
+          cx.y+d.orbR*Math.sin(d.ang)*Math.sin(incl), // gentle tilt out of the flat plane
+          cx.z+d.orbR*Math.sin(d.ang)*Math.cos(incl));
+      }
+      p.rotation.y+=d.spin*dt;
+      if(d.ring) d.ring.rotation.z-=d.spin*dt; // cancel the parent's spin: ring stays put
+      if(d.clouds) d.clouds.rotation.y+=dt*0.12; // clouds drift relative to surface
+      if(d.special==='jabberwocky') p.material.emissiveIntensity=0.7+Math.sin(t*1.4)*0.3; // eruptions pulse
+      if(d.special==='pgfcapital') p.material.emissiveIntensity=0.85+Math.sin(t*0.7)*0.15; // AMI hum
+    }
+    if(d&&d.kind==='mega') p.rotation.y+=dt*0.05;
+  });
+
+  // nebula slow spin
+  nebulae.forEach(sp=>{ sp.material.rotation+=0.0001; });
+
+  // shipyards
+  shipyards.forEach(({group,points})=>{
+    group.rotation.y+=0.005;
+    points.material.opacity=0.55+Math.sin(Date.now()*0.003)*0.3;
+  });
+
+  // threat zones pulse
+  threatZones.forEach(({zone})=>{
+    zone.userData.wire.rotation.y+=0.0012;
+    zone.userData.glow.material.opacity=0.05+Math.sin(t*2)*0.025;
+  });
+
+  // comets along visible routes
+  comets.forEach(c=>{
+    const u=c.userData;
+    const visible=routesVisible && u.route.startYear<=year;
+    if(!visible){ c.visible=false; return; }
+    if(u.delay>0){ u.delay-=dt; c.visible=false; return; }
+    c.visible=true;
+    u.progress+=u.speed*dt;
+    if(u.progress>=1){
+      u.progress=0; u.delay=1+Math.random()*3;
+      c.position.copy(u.start); return;
+    }
+    c.position.lerpVectors(u.start,u.end,u.progress);
+  });
+
+  // relativistic planetoids on curved paths, arriving from opposite sides (2225 → 2257)
+  planetoids.forEach(p=>{
+    const span=p.impact-p.depart;
+    let prog=(year-p.depart)/span;
+    p.grp.visible = year>=p.depart && year<=p.impact+1;
+    if(!p.grp.visible) return;
+    if(prog>=1){
+      prog=1;
+      p.grp.position.copy(p.end);
+      const f=Math.max(0,1-(year-p.impact));
+      const flash=0.5+Math.sin(t*30)*0.5;
+      p.glow.scale.setScalar(1+ f*8*flash);
+      p.glow.material.color.set(0xfff0d0);
+      p.body.visible=false; p.tail.visible=false;
+    } else {
+      const pr=Math.max(0,prog);
+      const pos=bezier(p.start,p.ctrl1,p.ctrl2,p.end,pr);
+      p.grp.position.copy(pos);
+      // tangent for tail orientation
+      const ahead=bezier(p.start,p.ctrl1,p.ctrl2,p.end,Math.min(1,pr+0.01));
+      const tan=ahead.clone().sub(pos).normalize();
+      const up=new THREE.Vector3(0,1,0);
+      p.tail.quaternion.setFromUnitVectors(up, tan.clone().multiplyScalar(-1)); // tail trails behind
+      p.tail.position.copy(tan.clone().multiplyScalar(-2.5));
+      p.body.visible=true; p.tail.visible=true;
+      p.glow.scale.setScalar(1.0+0.2*Math.sin(t*6+p.offset*3));
+      p.tail.material.opacity=0.3+0.15*Math.sin(t*4+p.offset*2);
+    }
+  });
+
+  updateLabels();
+  if(renderer.xr.isPresenting){ vrUpdate(dt,t); renderer.render(scene,camera); }
+  else renderer.render(scene,camera);
+}
+
+/* ============================================================
+   VR / WebXR module (Meta Quest) — immersive view with a
+   floating control panel and controller-ray selection.
+   ============================================================ */
+let vrPanel=null, vrPanelCtx=null, vrPanelTex=null, vrControllers=[], vrRayLines=[];
+let vrWorld=null, vrWorldChildren=[];
+let vrPlayBtnRect=null, vrTimelineRect=null;       // hit regions on the panel (in panel UV space)
+const vrTmp=new THREE.Vector3(), vrTmpQ=new THREE.Quaternion();
+const vrRaycaster=new THREE.Raycaster();
+
+function makeVRButton(){
+  if(!('xr' in navigator)) return;
+  const btn=document.createElement('button');
+  btn.id='vr-btn';
+  btn.textContent='ENTER VR';
+  // styled via the #vr-btn stylesheet rules (top-right, responsive)
+  document.body.appendChild(btn);
+  navigator.xr.isSessionSupported('immersive-vr').then(ok=>{
+    if(!ok){ btn.textContent='VR NOT AVAILABLE'; btn.style.opacity=.5; btn.style.display='block'; return; }
+    btn.style.display='block';
+    let session=null;
+    btn.onclick=async()=>{
+      if(session){ session.end(); return; }
+      session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});
+      renderer.xr.setReferenceSpaceType('local-floor');
+      await renderer.xr.setSession(session);
+      btn.textContent='EXIT VR';
+      buildVRScene();
+      session.addEventListener('end',()=>{ session=null; btn.textContent='ENTER VR'; teardownVRScene(); });
+    };
+  }).catch(()=>{ btn.style.display='none'; });
+}
+
+function buildVRScene(){
+  // Reparent the whole map into one rig so rotate/zoom/pan and ray-picking stay consistent.
+  vrWorld=new THREE.Group();
+  scene.add(vrWorld);
+  vrWorldChildren=[starsGroup, planetsGroup, trails];
+  vrWorldChildren.forEach(g=>{ if(g&&g.parent) g.parent.remove(g); if(g) vrWorld.add(g); });
+  // park the map a comfortable arm's length ahead and a bit below eye level, room-scaled
+  vrWorld.position.set(0,1.1,-1.4);
+  vrWorld.scale.setScalar(0.6);
+  // controllers + ray pointers
+  for(let i=0;i<2;i++){
+    const ctrl=renderer.xr.getController(i);
+    ctrl.userData.sel=false;
+    ctrl.addEventListener('selectstart',()=>{ ctrl.userData.sel=true; ctrl.userData.dragging=false; vrOnSelect(ctrl); });
+    ctrl.addEventListener('selectend',()=>{ ctrl.userData.sel=false; ctrl.userData.dragging=false; });
+    scene.add(ctrl);
+    const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1)]);
+    const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x5ff5d4,transparent:true,opacity:0.6}));
+    line.scale.z=5; ctrl.add(line);
+    vrControllers.push(ctrl); vrRayLines.push(line);
+  }
+  buildVRPanel();
+  vrInfo('Trigger a body to inspect. Left stick: zoom/pan. Right stick: rotate/raise. Drag the year bar on the panel.');
+}
+
+function teardownVRScene(){
+  // put the map back under the scene for flat mode
+  if(vrWorld){
+    vrWorldChildren.forEach(g=>{ if(g&&g.parent===vrWorld) vrWorld.remove(g); if(g) scene.add(g); });
+    if(starsGroup){ starsGroup.rotation.set(0,0,0); starsGroup.scale.setScalar(1); starsGroup.position.set(0,0,0); }
+    if(planetsGroup){ planetsGroup.rotation.set(0,0,0); planetsGroup.scale.setScalar(1); planetsGroup.position.set(0,0,0); }
+    scene.remove(vrWorld); vrWorld=null;
+  }
+  vrControllers.forEach(c=>scene.remove(c)); vrControllers=[]; vrRayLines=[];
+  if(vrPanel){ scene.remove(vrPanel); vrPanel=null; }
+}
+
+/* ---- floating control panel: a canvas-textured plane that shows telemetry + timeline ---- */
+function buildVRPanel(){
+  const cv=document.createElement('canvas'); cv.width=1024; cv.height=640;
+  vrPanelCtx=cv.getContext('2d');
+  vrPanelTex=new THREE.CanvasTexture(cv);
+  vrPanelTex.minFilter=THREE.LinearFilter; vrPanelTex.magFilter=THREE.LinearFilter;
+  const mat=new THREE.MeshBasicMaterial({map:vrPanelTex,transparent:true,side:THREE.DoubleSide});
+  vrPanel=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.375),mat);
+  vrPanel.position.set(-0.45,1.3,-0.7);
+  vrPanel.lookAt(0,1.5,0);
+  scene.add(vrPanel);
+  drawVRPanel('Bobiverse Starmap','Point & trigger a body to inspect it.\nLower bar: drag the year. Circle: play/pause.');
+}
+
+function drawVRPanel(title, body){
+  if(vrPanel){ vrPanel.userData.lastTitle=title; vrPanel.userData.lastBody=body; }
+  const x=vrPanelCtx, W=1024, H=640;
+  x.clearRect(0,0,W,H);
+  x.fillStyle='rgba(8,16,20,0.92)'; x.fillRect(0,0,W,H);
+  x.strokeStyle='rgba(95,245,212,0.55)'; x.lineWidth=4; x.strokeRect(6,6,W-12,H-12);
+  // title
+  x.fillStyle='#5ff5d4'; x.font='600 38px monospace';
+  x.fillText(title, 34, 64);
+  x.strokeStyle='rgba(95,245,212,0.25)'; x.lineWidth=2;
+  x.beginPath(); x.moveTo(34,86); x.lineTo(W-34,86); x.stroke();
+  // body text (wrapped)
+  x.fillStyle='#bfe9e2'; x.font='24px monospace';
+  const lines=(body||'').split('\n'); let yy=128;
+  lines.forEach(ln=>{
+    // simple word-wrap at ~58 chars
+    let cur='';
+    ln.split(' ').forEach(word=>{
+      if((cur+word).length>54){ x.fillText(cur,34,yy); yy+=32; cur=''; }
+      cur+=word+' ';
+    });
+    x.fillText(cur,34,yy); yy+=38;
+  });
+  // timeline bar
+  const tlY=H-120, tlX=34, tlW=W-68;
+  x.fillStyle='rgba(95,245,212,0.18)'; x.fillRect(tlX,tlY,tlW,12);
+  const yr=parseInt(slider.value), frac=(yr-2500)/(2580-2500);
+  x.fillStyle='#5ff5d4'; x.fillRect(tlX,tlY,tlW*frac,12);
+  x.beginPath(); x.arc(tlX+tlW*frac,tlY+6,14,0,7); x.fill();
+  x.fillStyle='#bfe9e2'; x.font='600 30px monospace';
+  x.fillText('YEAR '+yr, tlX, tlY-20);
+  vrTimelineRect={x:tlX/W,y:tlY/H,w:tlW/W,h:40/H};
+  // play/pause circle
+  const pbX=W-90, pbY=H-60;
+  x.strokeStyle='#5ff5d4'; x.lineWidth=4; x.beginPath(); x.arc(pbX,pbY,34,0,7); x.stroke();
+  x.fillStyle='#5ff5d4';
+  if(typeof playing!=='undefined' && playing){ x.fillRect(pbX-12,pbY-15,8,30); x.fillRect(pbX+4,pbY-15,8,30); }
+  else { x.beginPath(); x.moveTo(pbX-10,pbY-16); x.lineTo(pbX-10,pbY+16); x.lineTo(pbX+18,pbY); x.closePath(); x.fill(); }
+  vrPlayBtnRect={x:(pbX-34)/W,y:(pbY-34)/H,w:68/W,h:68/H};
+  vrPanelTex.needsUpdate=true;
+}
+
+function vrInfo(msg){ if(vrPanel) drawVRPanel('Bobiverse Starmap', msg); }
+
+/* ---- controller selection: raycast against panel first, then stars/planets ---- */
+function vrOnSelect(ctrl){
+  vrTmp.set(0,0,-1).applyQuaternion(ctrl.getWorldQuaternion(vrTmpQ)).normalize();
+  vrRaycaster.set(ctrl.getWorldPosition(new THREE.Vector3()), vrTmp);
+  if(vrRaycaster.params&&vrRaycaster.params.Points) vrRaycaster.params.Points.threshold=0.2;
+  // 1) panel hit?
+  if(vrPanel){
+    const hit=vrRaycaster.intersectObject(vrPanel,false)[0];
+    if(hit && hit.uv){ ctrl.userData.dragging=true; vrPanelClick(hit.uv.x, 1-hit.uv.y); return; }
+  }
+  // 2) planets (recursive, includes the finger-sized hit spheres), then star pick spheres
+  const pl=vrRaycaster.intersectObjects(planetsGroup.children,true)[0];
+  if(pl){ let o=pl.object; while(o.parent&&o.parent!==planetsGroup) o=o.parent;
+    if(o.userData&&o.userData.kind){ vrSelectBody(o); return; } }
+  const st=vrRaycaster.intersectObjects(pickMeshes,false)[0];
+  if(st){
+    const sys=byId(st.object.userData.systemId);
+    if(sys){
+      clearPlanets();                                  // avoid stacking duplicates on re-select
+      spawnPlanets(sys, st.object.parent.position);    // pick sphere's parent group = the star
+      vrShowSystem(sys);
+      vrRecenterOn(st.object);
+    }
+  }
+}
+
+// fly the rig smoothly so the selected system arrives ~2.2m ahead of the viewer
+let vrFly=null; // {p0,p1,s0,s1,t,dur}
+function vrRecenterOn(obj){
+  if(!vrWorld) return;
+  const targetScale=0.32;
+  // compute where the rig must END UP, without moving it yet:
+  // simulate: scale change k moves position by k, then translate so obj lands at `want`
+  const k=targetScale/vrWorld.scale.x;
+  const endPos=vrWorld.position.clone().multiplyScalar(k);
+  // object's world position AFTER the rescale = its local offset scaled by k around rig origin
+  const wpNow=obj.getWorldPosition(new THREE.Vector3());
+  const rel=wpNow.sub(vrWorld.position);           // offset from rig origin (world units)
+  const wpAfter=endPos.clone().add(rel.multiplyScalar(k));
+  const want=new THREE.Vector3(0,1.15,-2.2);
+  endPos.add(want.sub(wpAfter));
+  vrFly={p0:vrWorld.position.clone(), p1:endPos,
+         s0:vrWorld.scale.x, s1:targetScale, t:0, dur:1.2};
+}
+
+function vrPanelClick(u,v){
+  // play/pause
+  if(vrPlayBtnRect && u>=vrPlayBtnRect.x && u<=vrPlayBtnRect.x+vrPlayBtnRect.w &&
+     v>=vrPlayBtnRect.y && v<=vrPlayBtnRect.y+vrPlayBtnRect.h){ if(playBtn) playBtn.click(); redrawVRPanel(); return; }
+  // timeline scrub
+  if(vrTimelineRect && u>=vrTimelineRect.x && u<=vrTimelineRect.x+vrTimelineRect.w &&
+     v>=vrTimelineRect.y-0.03 && v<=vrTimelineRect.y+vrTimelineRect.h){
+    const frac=(u-vrTimelineRect.x)/vrTimelineRect.w;
+    const yr=Math.round(2500+frac*(2580-2500));
+    slider.value=yr; setYearLabel(yr); updateTimeline(yr); redrawVRPanel();
+  }
+}
+
+function vrPanelDrag(u,v){
+  // continuous scrub: only acts on the timeline band, with a generous vertical tolerance
+  if(!vrTimelineRect) return;
+  if(u>=vrTimelineRect.x-0.02 && u<=vrTimelineRect.x+vrTimelineRect.w+0.02 &&
+     v>=vrTimelineRect.y-0.06 && v<=vrTimelineRect.y+vrTimelineRect.h+0.04){
+    const frac=THREE.MathUtils.clamp((u-vrTimelineRect.x)/vrTimelineRect.w,0,1);
+    const yr=Math.round(2500+frac*(2580-2500));
+    if(yr!==parseInt(slider.value)){ slider.value=yr; setYearLabel(yr); updateTimeline(yr); }
+    redrawVRPanel();
+  }
+}
+
+function vrSelectBody(mesh){
+  const d=mesh.userData;
+  let body=(d.lore||'')+'';
+  if(d.gravity!==undefined) body='Gravity '+d.gravity.toFixed(2)+'g'+(d.gravityEst?'*':'')+'\n'+body;
+  drawVRPanel(d.name||'Body', body);
+  if(typeof focusObject==='function') focusObject(mesh, d.focusDist||1.5);
+}
+function vrShowSystem(sys){
+  const note=(sys.lore||'');
+  drawVRPanel(sys.name, note+'\nCrew/figures: '+((sys.people||sys.bobs)||[]).join(', '));
+}
+function redrawVRPanel(){ if(vrPanel){ const t=vrPanel.userData.lastTitle||'Bobiverse Starmap'; drawVRPanel(t, vrPanel.userData.lastBody||''); } }
+
+let starGroupHomeScale=1;
+/* ---- per-frame VR updates: thumbstick locomotion + panel follows left hand loosely ---- */
+function vrUpdate(dt,t){
+  const sess=renderer.xr.getSession(); if(!sess) return;
+  // smooth flight to a selected system
+  if(vrFly){
+    vrFly.t+=dt;
+    const u=Math.min(1, vrFly.t/vrFly.dur);
+    const e=u<0.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;   // easeInOutQuad
+    vrWorld.position.lerpVectors(vrFly.p0, vrFly.p1, e);
+    vrWorld.scale.setScalar(vrFly.s0+(vrFly.s1-vrFly.s0)*e);
+    if(u>=1) vrFly=null;
+  }
+  for(const src of sess.inputSources){
+    if(!src.gamepad) continue;
+    const ax=src.gamepad.axes||[];
+    // Quest maps thumbsticks to axes[2],[3]; some browsers use [0],[1]. Pick whichever is live.
+    const sx = Math.abs(ax[2]||0) > Math.abs(ax[0]||0) ? (ax[2]||0) : (ax[0]||0);
+    const sy = Math.abs(ax[3]||0) > Math.abs(ax[1]||0) ? (ax[3]||0) : (ax[1]||0);
+    const dz=0.15; // deadzone
+    if(vrFly && (Math.abs(sx)>dz||Math.abs(sy)>dz)) vrFly=null; // manual input takes over
+    const hand=src.handedness;
+    if(hand==='right'){
+      if(Math.abs(sx)>dz){
+        // rotate the map around the PLAYER (standing origin), not around Sol
+        const ang=-sx*dt*1.4;
+        const pivot=new THREE.Vector3(0,vrWorld.position.y,0);
+        vrWorld.position.sub(pivot);
+        vrWorld.position.applyAxisAngle(VR_UP,ang);
+        vrWorld.position.add(pivot);
+        vrWorld.rotateOnWorldAxis(VR_UP,ang);
+      }
+      if(Math.abs(sy)>dz) vrWorld.position.y -= sy*dt*0.8;            // raise/lower map
+    }
+    if(hand==='left'){
+      if(Math.abs(sy)>dz){
+        // zoom about a point ~1.5m in front of the viewer, so it zooms toward your gaze
+        const k=THREE.MathUtils.clamp(1+(-sy)*dt*0.9, 0.5, 1.5);
+        const ns=THREE.MathUtils.clamp(vrWorld.scale.x*k,0.04,6);
+        const real=ns/vrWorld.scale.x;
+        const pivot=new THREE.Vector3(0,1.3,-1.5);
+        vrWorld.position.sub(pivot).multiplyScalar(real).add(pivot);
+        vrWorld.scale.setScalar(ns);
+      }
+      if(Math.abs(sx)>dz) vrWorld.position.x -= sx*dt*0.8;           // pan sideways
+    }
+  }
+  // continuous interaction: while a trigger is held, keep hit-testing the panel (slider drag)
+  vrControllers.forEach(ctrl=>{
+    if(!ctrl.userData.sel) return;
+    vrTmp.set(0,0,-1).applyQuaternion(ctrl.getWorldQuaternion(vrTmpQ));
+    vrRaycaster.set(ctrl.getWorldPosition(new THREE.Vector3()), vrTmp);
+    if(vrPanel){
+      const hit=vrRaycaster.intersectObject(vrPanel,false)[0];
+      if(hit&&hit.uv){ vrPanelDrag(hit.uv.x, 1-hit.uv.y); }
+    }
+  });
+  // update ray pointer lengths so they visually meet the panel/bodies
+  vrControllers.forEach((ctrl,i)=>{
+    vrTmp.set(0,0,-1).applyQuaternion(ctrl.getWorldQuaternion(vrTmpQ));
+    vrRaycaster.set(ctrl.getWorldPosition(new THREE.Vector3()), vrTmp);
+    let dist=5;
+    const targets=[vrPanel].filter(Boolean).concat(pickMeshes);
+    const hit=vrRaycaster.intersectObjects(targets,false)[0];
+    if(hit) dist=hit.distance;
+    if(vrRayLines[i]) vrRayLines[i].scale.z=dist;
+  });
+  // panel lazy-follows the head: parked ahead-left, eases over, always faces you
+  if(vrPanel){
+    const xrCam=renderer.xr.getCamera ? renderer.xr.getCamera(camera) : camera;
+    xrCam.getWorldPosition(vrCamPos);
+    vrCamDir.set(0,0,-1).applyQuaternion(xrCam.getWorldQuaternion(vrTmpQ));
+    vrCamDir.y=0; if(vrCamDir.lengthSq()<0.001) vrCamDir.set(0,0,-1); vrCamDir.normalize();
+    const left=new THREE.Vector3(vrCamDir.z,0,-vrCamDir.x); // 90° left of gaze
+    vrPanelGoal.copy(vrCamPos)
+      .addScaledVector(vrCamDir,0.85)
+      .addScaledVector(left,0.42);
+    vrPanelGoal.y=vrCamPos.y-0.18;
+    vrPanel.position.lerp(vrPanelGoal,0.06);
+    vrPanel.lookAt(vrCamPos);
+  }
+  if(vrPanelTex) vrPanelTex.needsUpdate=true;
+}
+const VR_UP=new THREE.Vector3(0,1,0);
+const vrCamPos=new THREE.Vector3(), vrCamDir=new THREE.Vector3(), vrPanelGoal=new THREE.Vector3();
+
+makeVRButton();
+
+updateTimeline(2567);
+renderer.setAnimationLoop(animate);   // XR-compatible loop (also drives the flat view)
+})();
+</script>
+</body>
+</html>
