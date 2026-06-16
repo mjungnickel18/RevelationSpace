@@ -291,7 +291,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="hud-top">
   <div id="brand" class="panel">
     <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
-    <p>Revelation Space · Books 1–2 · 2180–2567</p>
+    <p>Revelation Space · Books 1–2 · 2083–2567</p>
   </div>
   <div id="search-wrap">
     <span id="search-glyph">⌖</span>
@@ -309,7 +309,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <button id="step-back" class="deck-btn step" title="Previous year">◀</button>
   <div id="slider-wrap">
     <div id="ticks"></div>
-    <input type="range" id="timeline-slider" min="2180" max="2580" value="2567" />
+    <input type="range" id="timeline-slider" min="2080" max="2580" value="2567" />
   </div>
   <button id="step-fwd" class="deck-btn step" title="Next year">▶</button>
   <button id="ev-fwd" class="deck-btn step" title="Next event">⏭</button>
@@ -426,7 +426,7 @@ const ROUTES = [
   { from:"Sol", to:"Epsilon Eridani", traveler:"Colony ships", dates:"24th c.",
     note:"Early settlement wave to Yellowstone, later perfected by the Demarchists.", maidenVoyage:true, startYear:2350, endYear:2350 },
   { from:"Sol", to:"61 Cygni", traveler:"The Flotilla (5 generation ships)", dates:"c.2190 - 2350",
-    note:"Five sublight generation ships (Santiago, Brazilia, Islamabad, Palestine, Baghdad) at ~8% c. Sky Haussmann jettisons sleepers to win the race; Journey's End becomes Sky's Edge.", maidenVoyage:true, startYear:2190, endYear:2350 },
+    note:"Five sublight freighters (Santiago, Brazilia, Islamabad, Palestine, Baghdad) launched from Mercury in 2083 at a fraction of c. Islamabad and Palestine are lost en route; Sky's casket purge wins the Santiago the race.", maidenVoyage:true, startYear:2083, endYear:2350 },
   { from:"61 Cygni", to:"Epsilon Eridani", traveler:"Tanner Mirabel (pursuit)", dates:"c.2510 - 2517",
     note:"Tanner follows Argent Reivich from Sky's Edge to plague-ruined Chasm City \u2014 a decades-long reefersleep voyage.", strike:true, startYear:2510, endYear:2517 },
 ];
@@ -470,12 +470,18 @@ const EVENTS = [
   { year:2567, system:"Hades", title:"Into Cerberus — Sylveste's death",
     text:"Sylveste breaches Cerberus's Inhibitor beacon. He and Calvin are scanned into the Hades Matrix; realising he was Sun Stealer's pawn, he detonates his implants. Khouri, crushed by Hades, survives only as a copy; Volyova frees the Captain to kill Sun Stealer." },
   // --- Chasm City (publication book 2; mostly prequel-era backstory) ---
-  { year:2190, system:"Sol", title:"[Chasm City] The Flotilla departs Earth",
-    text:"Five generation ships — Santiago, Brazilia, Islamabad, Palestine, Baghdad — leave the Solar System at ~8% of light for 61 Cygni, each with 150 waking crew and ~1,000 frozen 'momios'." },
-  { year:2290, system:"61 Cygni", title:"[Chasm City] Sky Haussmann born on the Santiago",
-    text:"Born ~100 years into the voyage to Titus Haussmann's family. Haunted by an AI 'clown' tutor, Sky grows into a brilliant, sociopathic shipboard politician." },
-  { year:2340, system:"61 Cygni", title:"[Chasm City] Sky's atrocity wins the race",
-    text:"Sky sabotages and jettisons rings of sleeper caskets to lighten the Santiago, letting it decelerate harder and arrive first — murdering hundreds of colonists." },
+  { year:2083, system:"Sol", title:"[Chasm City] The Flotilla launches from Mercury",
+    text:"Humanity's first crewed interstellar effort: five repurposed freighters — Santiago, Brazilia, Islamabad, Palestine, Baghdad — leave Mercury for 61 Cygni's 'Journey's End'. Each carries ~150 waking crew and ~960 frozen 'momios'. Lithium/antilithium engines whose antimatter flow, once lit, cannot be stopped." },
+  { year:2183, system:"Sol", title:"[Chasm City] Sky Haussmann born aboard the Santiago",
+    text:"Born ~100 years into the voyage to security chief Titus Haussmann. A haunting AI 'clown' tutor and a brutal upbringing shape Sky into a brilliant, sociopathic shipboard politician." },
+  { year:2186, system:"Sol", title:"[Chasm City] The Islamabad explodes",
+    text:"An engine 'upgrade' sent from Earth is implemented against caution — and the Islamabad spontaneously detonates with all hands and passengers. The blast spares the other four hulls but kills exposed crew. Four ships remain." },
+  { year:2200, system:"Sol", title:"[Chasm City] Brazilia's first contact",
+    text:"Two Brazilia crew discover an alien starship shadowing the Flotilla and make first contact — but both die before they can report what they found." },
+  { year:2330, system:"61 Cygni", title:"[Chasm City] Sky's casket purge",
+    text:"Approaching 61 Cygni, Sky and his friend Norquinco secretly jettison rings of sleeper caskets — many holding living momios — to lighten the Santiago so it can decelerate harder and arrive first. Hundreds are murdered." },
+  { year:2340, system:"61 Cygni", title:"[Chasm City] The Palestine destroyed",
+    text:"Deceived by Sky's scheme, Captain Zamudio tries to choke the Palestine's unstoppable antimatter flow to match the Santiago's curve — and accidentally destroys his own ship. Brazilia and Baghdad ally against the Santiago." },
   { year:2350, system:"61 Cygni", title:"[Chasm City] Journey's End becomes Sky's Edge",
     text:"The Santiago lands first and claims the best land; the world is renamed 'Sky's Edge' for Haussmann's crime. Condemned, he substitutes a double and vanishes into the jungle as Cahuella." },
   { year:2500, system:"61 Cygni", title:"[Chasm City] Gitta's death on Sky's Edge",
@@ -2359,7 +2365,7 @@ slider.addEventListener('input',e=>{
 });
 function stepYear(delta){
   if(playing){ playing=false; playBtn.textContent='▶'; playBtn.classList.remove('on'); }
-  const min=parseInt(slider.min)||2180, max=parseInt(slider.max)||2580;
+  const min=parseInt(slider.min)||2080, max=parseInt(slider.max)||2580;
   const y=Math.min(max,Math.max(min,parseInt(slider.value)+delta));
   slider.value=y; setYearLabel(y); updateTimeline(y);
 }
@@ -2398,7 +2404,7 @@ playBtn.addEventListener('click',()=>{
   playing=!playing;
   playBtn.textContent=playing?'❚❚':'▶';
   playBtn.classList.toggle('on',playing);
-  if(playing && parseInt(slider.value)>=2580){ slider.value=2180; }
+  if(playing && parseInt(slider.value)>=2580){ slider.value=2080; }
 });
 
 /* ============================================================
@@ -2700,7 +2706,7 @@ function drawVRPanel(title, body){
   // timeline bar
   const tlY=H-120, tlX=34, tlW=W-68;
   x.fillStyle='rgba(95,245,212,0.18)'; x.fillRect(tlX,tlY,tlW,12);
-  const yr=parseInt(slider.value), frac=(yr-2180)/(2580-2180);
+  const yr=parseInt(slider.value), frac=(yr-2080)/(2580-2080);
   x.fillStyle='#5ff5d4'; x.fillRect(tlX,tlY,tlW*frac,12);
   x.beginPath(); x.arc(tlX+tlW*frac,tlY+6,14,0,7); x.fill();
   x.fillStyle='#bfe9e2'; x.font='600 30px monospace';
@@ -2771,7 +2777,7 @@ function vrPanelClick(u,v){
   if(vrTimelineRect && u>=vrTimelineRect.x && u<=vrTimelineRect.x+vrTimelineRect.w &&
      v>=vrTimelineRect.y-0.03 && v<=vrTimelineRect.y+vrTimelineRect.h){
     const frac=(u-vrTimelineRect.x)/vrTimelineRect.w;
-    const yr=Math.round(2180+frac*(2580-2180));
+    const yr=Math.round(2080+frac*(2580-2080));
     slider.value=yr; setYearLabel(yr); updateTimeline(yr); redrawVRPanel();
   }
 }
@@ -2782,7 +2788,7 @@ function vrPanelDrag(u,v){
   if(u>=vrTimelineRect.x-0.02 && u<=vrTimelineRect.x+vrTimelineRect.w+0.02 &&
      v>=vrTimelineRect.y-0.06 && v<=vrTimelineRect.y+vrTimelineRect.h+0.04){
     const frac=THREE.MathUtils.clamp((u-vrTimelineRect.x)/vrTimelineRect.w,0,1);
-    const yr=Math.round(2180+frac*(2580-2180));
+    const yr=Math.round(2080+frac*(2580-2080));
     if(yr!==parseInt(slider.value)){ slider.value=yr; setYearLabel(yr); updateTimeline(yr); }
     redrawVRPanel();
   }
