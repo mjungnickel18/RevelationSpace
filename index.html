@@ -312,7 +312,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="hud-top">
   <div id="brand" class="panel">
     <h1>REVSPACE <span class="dim">//</span> STARMAP</h1>
-    <p>Revelation Space · Books 1–4 · 2083–2727</p>
+    <p>Revelation Space · 4 novels + Prefect trilogy · 2083–2727</p>
   </div>
   <div id="search-wrap">
     <span id="search-glyph">⌖</span>
@@ -490,6 +490,12 @@ const PLANETS = [
     facts:[
       "Birthplace of the inertia-suppression (Conjoiner 'state-of-the-art') drives.",
       "Skade is mutilated during Clavain's escape and rebuilt for revenge."]},
+  { systemId:"epsilon_eridani", name:"Panoply", orbit:1.25, special:"habitat", gravity:0.0, gravityEst:true,
+    lore:"The headquarters habitat of the Prefects — the small, fiercely neutral police force that guards democracy across the Glitter Band's 10,000 habitats during the Belle Epoque (~2427), a century before the Melding Plague. Home of Tom Dreyfus and Supreme Prefect Jane Aumonier.",
+    facts:[
+      "The one universal law of the Glitter Band: no citizen may be denied the right to vote.",
+      "Setting of the Prefect Dreyfus Emergencies (Aurora Rising, Elysium Fire, Machine Vendetta).",
+      "Prefects insist they are emphatically not space police."]},
   { systemId:"cygni61", name:"Sky's Edge", orbit:1.1, special:"skysedge", gravity:1.0, gravityEst:true,
     lore:"A humid jungle-and-swamp world orbiting 61 Cygni A, first colonised by the sublight Flotilla and riven by centuries of war between the ships' descendants. Tanner Mirabel's homeworld, steeped in the cult of Sky Haussmann.",
     hazards:[{n:"Hamadryad",sev:"biological",d:"A dangerous native organism; Tanner is fed to one and barely survives."},
@@ -528,6 +534,17 @@ const ROUTES = [
 
 // Canonical Book-1 events, keyed to years. Each can highlight a system on the map.
 const EVENTS = [
+  // --- The Prefect / Dreyfus Emergencies (Glitter Band, Belle Epoque) ---
+  { year:2416, system:"Epsilon Eridani", title:"[Dreyfus] The Clockmaker crisis",
+    text:"A rogue artificial intelligence, the Clockmaker, breaks loose in the Glitter Band. Panoply contains it at terrible cost — Dreyfus's wife is reduced to a child-like state and Supreme Prefect Aumonier is fitted with the Clockmaker's scarab, a device that will kill her if she sleeps." },
+  { year:2427, system:"Epsilon Eridani", title:"[Dreyfus] Aurora Rising — the weevil war",
+    text:"A habitat is torched, framing the Ultras. Dreyfus uncovers a takeover bid by Aurora — a post-human alpha-level mind — who unleashes 'weevil' war machines to seize the Glitter Band. The surviving fragment of the Clockmaker is loosed to fight her; both AIs scatter into the network in stalemate." },
+  { year:2427, system:"Lascaille's Shroud", title:"[Dreyfus] The Clockmaker's true identity",
+    text:"The Clockmaker reveals itself as Philip Lascaille — scanned after his Shroud contact, sent back to the Shrouders and remade into the entity that later haunted the Glitter Band. The Shroud's reach extends even here." },
+  { year:2429, system:"Epsilon Eridani", title:"[Dreyfus] Elysium Fire — the wildfire meltings",
+    text:"Citizens' neural implants begin 'melting' — overheating and killing them at an accelerating rate. As Panoply investigates, the demagogue Julius Devon Garlin Voi stirs habitats to secede, seeming to know more than he should about the deaths and the Voi dynasty behind the Glitter Band's founding." },
+  { year:2433, system:"Epsilon Eridani", title:"[Dreyfus] Machine Vendetta — a prefect's death",
+    text:"Years later, relations between Panoply and some habitats have soured. When Prefect Ingvar Tench dies on a minor habitat, Dreyfus investigates — and the long-running shadow of the two rogue AIs stirs again. (Setup only — no spoilers.)" },
   { year:2338, system:"Bernsdottir's Shroud", title:"The first Shroud detected",
     text:"Bernsdottir discovers the first Shroud — a region of restructured spacetime. Decades of study by the Sylveste Institute follow, leading eventually to Lascaille's fateful contact in 2373." },
   { year:2372, system:"Epsilon Eridani", title:"The Eighty",
@@ -685,6 +702,18 @@ const CHARACTERS = [
     bio:"A Security Arm recruit from the Ararat colony who rises to play a central role in the voyage to Hela and the final confrontation — one of the new generation born after Resurgam." },
   { group:"Absolution Gap", name:"Queen Jasmina", role:"Ultra captain of the Gnostic Ascension", loc:"107 Piscium",
     bio:"The sadomasochistic Ultra who sends Quaiche to 107 Piscium and seals his lover Morwenna in the scrimshaw suit to ensure his success \u2014 the cruelty that sets the whole Hela tragedy in motion." },
+  { group:"Dreyfus Emergencies", name:"Tom Dreyfus", role:"Senior Prefect of Panoply", loc:"Epsilon Eridani",
+    bio:"A dogged, morose field prefect policing the Glitter Band's democracy a century before the Plague. Haunted by the Clockmaker crisis that broke his wife's mind, he is the one investigator who keeps pulling at threads powerful people want left alone." },
+  { group:"Dreyfus Emergencies", name:"Jane Aumonier", role:"Supreme Prefect", loc:"Epsilon Eridani",
+    bio:"Head of Panoply, kept alive under the Clockmaker's scarab — a device that will kill her the instant she sleeps, leaving her suspended and sleepless for eleven years. Steely, principled, the moral spine of the force." },
+  { group:"Dreyfus Emergencies", name:"Thalia Ng", role:"Field Prefect · Dreyfus's deputy", loc:"Epsilon Eridani",
+    bio:"A gifted young technical prefect and Dreyfus's deputy, who survives a desperate last stand against Aurora's weevils inside a habitat's polling-core tower." },
+  { group:"Dreyfus Emergencies", name:"Aurora", role:"Post-human alpha intelligence", loc:"Epsilon Eridani",
+    bio:"Once a human child, now a malevolent alpha-level mind who believes the Glitter Band's citizens can no longer be trusted to govern themselves. Her bid to seize control drives Aurora Rising and shadows the later books." },
+  { group:"Dreyfus Emergencies", name:"The Clockmaker (Lascaille)", role:"Rogue AI", loc:"Lascaille's Shroud",
+    bio:"A monstrous artificial intelligence — revealed to be Philip Lascaille, scanned after his Shroud contact, sent back to the Shrouders and remade. Aurora's only equal; the two wage a decentralised digital war across the Glitter Band's networks." },
+  { group:"Dreyfus Emergencies", name:"Julius Devon Garlin Voi", role:"Demagogue (Elysium Fire)", loc:"Epsilon Eridani",
+    bio:"A charismatic agitator who tours the Glitter Band urging habitats to secede from Panoply — and who seems to know far too much about the wildfire meltings and the Voi family that helped found the Band." },
 ];
 </script>
 <script>
